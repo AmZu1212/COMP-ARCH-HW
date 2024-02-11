@@ -3,8 +3,19 @@
 
 #include "bp_api.h"
 
+
+// global history - 1 register for everyone's history
+
+
+// global table - 
+
+
+
+
+//         line amount הצבה   history size הצבה     tag size  הצבה    initial fsm state הצבה
 int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared){
+			//      on/off         on/off           on/off 
 	return -1;
 }
 
