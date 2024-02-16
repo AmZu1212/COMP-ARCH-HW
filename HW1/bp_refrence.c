@@ -20,9 +20,9 @@ struct BP {
 	unsigned historySize;
 	unsigned tagSize;
 	unsigned fsmState;
-	bool isGlobalHist;
-	bool isGlobalTable;
-	int Shared;
+	bool isGlobalHist;//
+	bool isGlobalTable;//
+	int Shared;//
 	unsigned** BPtable;
 	unsigned** LHISTtable;
 	unsigned* GHISTtable;
@@ -43,9 +43,9 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	BP->historySize = historySize;
 	BP->tagSize = tagSize;
 	BP->fsmState = fsmState;
-	BP->isGlobalHist = isGlobalHist;
-	BP->isGlobalTable = isGlobalTable;
-	BP->Shared = Shared;
+	BP->isGlobalHist = isGlobalHist;//
+	BP->isGlobalTable = isGlobalTable;//
+	BP->Shared = Shared;//
 
 	//btb table initialization
 	BP->BPtable = (unsigned**)malloc(btbSize*sizeof(unsigned*));
