@@ -6,6 +6,14 @@
 #define ADDRESS 30
 #define MAXUNSIGNED 4294967295
 
+
+bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
+bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
+bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
+bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
+
+
+
 //	Definitions:
 //		SM - State Machine ~  מכונת מצבים
 //		HS - History ~ היסטוריה
@@ -215,7 +223,41 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
  * param[out] dst - the target address (when prediction is not taken, dst = pc + 4)
  * return true when prediction is taken, otherwise (prediction is not taken) return false
  */
-bool BP_predict(uint32_t pc, uint32_t *dst){
+bool BP_predict(uint32_t pc, uint32_t *dst) {
+	uint32_t tag = ((pc / 4) / this_btbSize) % ((unsigned)pow(2, this_tagSize));
+	unsigned tag_idx = (pc / 4) % (this_btbSize);
+	switch (bp_type) {
+
+		case SML_HSL:
+			bool result = SML_HSL_predict(pc, *dst, tag_idx, tag);
+			return result;
+			break;
+
+		case SMG_HSG:
+			bool result = SML_HSL_predict(pc, *dst, tag_idx, tag);
+			return result;
+			break;
+
+		case SML_HSG:
+			bool result = SML_HSL_predict(pc, *dst, tag_idx, tag);
+			return result;
+			break;
+
+		case SMG_HSL:
+			bool result = SML_HSL_predict(pc, *dst, tag_idx, tag);
+			return result;
+			break;
+
+		default:
+			if (DEBUG) {
+				printf("BP_predict(): switch failed, ");
+				printf("invalid type or non-branch command");
+				printf("(not supposed t get here)\n");
+			}		
+	}
+
+	//Didn't find the command
+	*dst = pc + 4;
 	return false;
 }
 
@@ -236,7 +278,162 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
  * BP_GetStats: Return the simulator stats using a pointer
  * curStats: The returned current simulator state (only after BP_update)
  */
-void BP_GetStats(SIM_stats *curStats){
+void BP_GetStats(SIM_stats *currStats) {
+	currStats->br_num = br_num;
+    currStats->flush_num = flush_num;
+
+	switch (bp_type) {
+
+		case SML_HSL:
+			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + this_histSize + 2 * pow(2.0, (double)this_histSize));
+			free(this_bp->SML);
+			free(this_bp->HSLtable);	
+			break;
+
+		case SMG_HSG:
+			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1)  + this_histSize + 2 * pow(2.0, (double)this_histSize);
+			free(this_bp->SMG);
+			free(this_bp->HSGtable);
+			break;
+
+		case SML_HSG:
+			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + 2 * pow(2.0, (double)this_histSize)) + this_histSize;
+			free(this_bp->SML);
+			free(this_bp->HSGtable);
+			break;
+
+		case SMG_HSL:
+			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + this_histSize) + 2 * pow(2.0, (double)this_histSize);
+			free(this_bp->SMG);
+			free(this_bp->HSLtable);
+			break;
+
+		default:
+			if (DEBUG) {
+				printf("BP_GetStats(): switch failed, ");
+				printf("invalid type or non-branch command");
+				printf("(not supposed to get here)\n");
+			}		
+	}
+	
+	free(this_bp->BPTable);
+	free(this_bp);
 	return;
 }
 
+
+
+/* return true when prediction is taken,
+ * return false when prediction is not taken) 
+ */
+bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
+ //found the command
+	if(this_bp->BPTable[tag_idx][0] == tag) {
+		int hist_val = 0;
+		for(uint32_t j = 0; j < this_histSize; j++) {
+			hist_val += (this_bp->HSLtable[tag_idx][j]) * (pow(2, (this_histSize-j-1)));
+			// this translates from binary to decimal for array accessing
+		}
+		int predict_val = this_bp->SML[tag_idx][hist_val];
+		bool prediction = (predict_val == 0 || predict_val == 1)? false : true;
+		if(prediction) {
+			*dst = this_bp->BPTable[tag_idx][1];
+			
+		}
+		else {
+			*dst = pc + 4;
+		}
+		return prediction;
+	} 
+}
+
+/* return true when prediction is taken,
+ * return false when prediction is not taken) 
+ */
+bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
+	if(this_bp->BPTable[tag_idx][0] == tag) {
+		int hist_val = 0;
+		for(uint32_t j = 0; j < this_histSize; j++) {
+			hist_val += (this_bp->HSGtable[j])*(pow(2, ((this_histSize)-j-1)));
+		}
+		int machine_address;
+		//LSB share
+		if(this_Shared == 1) {
+			machine_address = ((pc/((unsigned)(pow(2,2))) % ((unsigned)pow(2, this_histSize)))^(hist_val));
+		}
+		//MSB share
+		else if(this_Shared == 2) {
+			machine_address = ((pc/((unsigned)(pow(2,16))) % ((unsigned)pow(2, this_histSize)))^(hist_val));
+		}
+		//No share
+		else {
+			machine_address = hist_val;
+		}
+		int predict_val = this_bp->SMG[machine_address];
+		bool prediction = (predict_val == 0 || predict_val == 1) ? false : true;
+		
+		if(prediction) {
+			*dst = this_bp->BPTable[tag_idx][1];
+		}
+		else {
+			*dst = pc + 4;
+		}
+		return prediction;
+	}
+}
+
+/* return true when prediction is taken,
+ * return false when prediction is not taken) 
+ */
+bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx , uint32_t tag) {
+	if(this_bp->BPTable[tag_idx][0] == tag){
+		int hist_val = 0;
+		for(uint32_t i = 0; i < this_histSize; i++) {
+			hist_val += (this_bp->HSGtable[i]) * (pow(2, (this_histSize-i-1)));
+			// this translates from binary to decimal for array accessing
+		}
+		int predict_val = this_bp->SML[tag_idx][hist_val];
+		bool prediction = (predict_val == 0 || predict_val == 1) ? false : true;
+		if(prediction) {
+			*dst = this_bp->BPTable[tag_idx][1];
+		}
+		else {
+			*dst = pc + 4;
+		}
+		return prediction;
+	}
+}
+
+/* return true when prediction is taken,
+ * return false when prediction is not taken) 
+ */
+bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
+	if(this_bp->BPTable[tag_idx][0] == tag) {
+		int hist_val = 0;
+		for(uint32_t j = 0; j < this_histSize; j++) {
+			hist_val += (this_bp->HSLtable[tag_idx][j]) * (pow(2, (this_histSize-j-1)));
+		}
+		int machine_address;
+		//LSB share
+		if(this_Shared == 1) {
+			machine_address = ((pc/((unsigned)(pow(2,2))) % ((unsigned)pow(2, this_histSize))) ^ (hist_val));
+		}
+		//MSB share
+		else if(this_Shared == 2) {
+			machine_address = ((pc/((unsigned)(pow(2,16))) % ((unsigned)pow(2, this_histSize))) ^ (hist_val));               
+		}
+		//No share
+		else {
+			machine_address = hist_val;
+		}
+		int predict_val = this_bp->SMG[machine_address];
+		bool prediction = (predict_val == 0 || predict_val == 1) ? false : true;
+		if(prediction) {
+			*dst = this_bp->BPTable[tag_idx][1];
+		}
+		else {
+			*dst = pc + 4;
+		}
+		return prediction;
+	}
+}
