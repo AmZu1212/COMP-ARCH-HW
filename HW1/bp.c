@@ -84,12 +84,23 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 	if(!this_bp->BPTable) {
 		if (DEBUG) printf("malloc(): BPTable malloc failed\n");
+		free(this_bp);
        	return -1;
     }
 
 	// 2 for each line?
-	for(uint32_t i = 0 ; i < this_btbSize; i++) {
+	for(uint32_t i = 0; i < this_btbSize; i++) {
 		this_bp->BPTable[i] = (unsigned*)malloc(2 * sizeof(unsigned));
+		if(!this_bp->BPTable[i]) {
+			if (DEBUG) printf("malloc(): BPTable[%d] malloc failed\n", i);
+			//cleanup
+			for(uint32_t j = 0 ; j < i; j++) {
+				free(this_bp->BPTable[j]);
+			}
+			free(this_bp->BPTable);
+			free(this_bp);
+			return -1;
+		}
 	}
 
 	// place holder value for each lines
@@ -99,22 +110,102 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 
 	// history initizalization this_bp->HSGtable
-	if(isGlobalHist){
-        this_bp->HSGtable = (unsigned*)malloc(historySize*sizeof(unsigned));
-        if(!this_bp->HSGtable){
+	if(bp_type == SMG_HSG || bp_type == SML_HSG) {
+
+        this_bp->HSGtable = (unsigned*)malloc(this_histSize *  sizeof(unsigned));
+
+        if(!this_bp->HSGtable) {
+			if (DEBUG) printf("malloc(): HSGtable malloc failed\n");
 			free(this_bp->BPTable);
-			free(this_bp->HSGtable);
+			free(this_bp);
 			return -1;
 		}
-        for(uint32_t i=0; i<historySize; i++){
-        	this_bp->HSGtable [i] = 0;
+
+		// init history to 0
+        for(uint32_t i = 0; i < this_histSize; i++) {
+        	this_bp->HSGtable[i] = 0;
+        }
+	}
+	else { // SMG_HSL or SML_HSL
+
+		this_bp->HSLtable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*)); //rows
+
+		if(!this_bp->HSLtable){
+			printf("malloc(): HSLtable malloc failed\n");
+			free(this_bp->BPTable);
+			free(this_bp);
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+        	this_bp->HSLtable[i] = (unsigned*)malloc(this_histSize * sizeof(unsigned)); //columns
+			if(!this_bp->HSLtable[i]) {
+				if (DEBUG) printf("malloc(): HSLtable[%d] malloc failed\n", i);
+				//cleanup
+				for(uint32_t j = 0 ; j < i; j++) {
+					free(this_bp->HSLtable[j]);
+				}
+				free(this_bp->HSLtable);
+				free(this_bp->BPTable);
+				free(this_bp);
+				return -1;
+			}
+		}
+
+		// init histories to 0
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+            for( uint32_t j = 0; j < this_histSize; j++) {
+            	this_bp->HSLtable[i][j] = 0;
+            }
         }
 	}
 
 
-	// state machines initizalization
+	// state machines initizalization (global then local)
+	if(bp_type == SMG_HSG || bp_type == SMG_HSL) {
 
-	return -1;
+        this_bp->SMG = (unsigned*)malloc((pow(2, this_histSize))*sizeof(unsigned));
+		
+		if(!this_bp->SMG) {
+			if (DEBUG) printf("malloc(): SMG malloc failed\n");
+			free(this_bp->BPTable);
+			free(this_bp);
+			// not freeing history here because its too complicated
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < (pow(2, this_histSize)); i++) {
+        	this_bp->SMG[i] = (unsigned)initState;
+        }
+	} else {
+
+		this_bp->SML = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
+		if(!this_bp->SML) {
+			if (DEBUG) printf("malloc(): SMG malloc failed\n");
+			free(this_bp->BPTable);
+			free(this_bp);
+			// not freeing history here because its too complicated
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+        	this_bp->SML[i] = (unsigned*)malloc(pow(2, this_histSize) * sizeof(unsigned));
+			if (DEBUG) printf("malloc(): HSLtable[%d] malloc failed\n", i);
+			for(uint32_t j = 0 ; j < i; j++) {
+				free(this_bp->SML[j]);
+			}
+			// not freeing history here because its too complicated
+        }
+
+		// initializes state machines to initial state
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+            for( uint32_t j = 0; j < pow(2, this_histSize); j++) {
+            	this_bp->SML[i][j] = (unsigned)initState;
+            }
+        }
+	}
+
+	return 0;
 }
 
 
