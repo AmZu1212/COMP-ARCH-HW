@@ -10,20 +10,20 @@
 
 // Parameters
 #define DEBUG 0
-#define ADDRESS 30
 #define MAXUNSIGNED 4294967295
+#define ADDRESS 30
 
 // Prediction Functions
-bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
-bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
-bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
-bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag);
+bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
+bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
+bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
+bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
 
 // Update Functions
-void SML_HSL_update(bool taken, unsigned tag_idx, uint32_t tag);
-void SMG_HSG_update(uint32_t pc, bool taken, unsigned tag_idx, uint32_t tag);
-void SML_HSG_update(bool taken, unsigned tag_idx, uint32_t tag);
-void SMG_HSL_update(uint32_t pc, bool taken, unsigned tag_idx, uint32_t tag);
+void SML_HSL_update(bool taken, unsigned lineNum, uint32_t tag);
+void SMG_HSG_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag);
+void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag);
+void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag);
 
 
 
@@ -43,7 +43,7 @@ enum predictor_t {SML_HSL, SMG_HSG, SML_HSG, SMG_HSL};
 
 // Branch Predictor Structure, SML/SMG - HSL/HSG
 struct bp_t {
-	unsigned** BPTable;
+	unsigned** BPtable;
 	unsigned** HSLtable;
 	unsigned*  HSGtable;
 	unsigned** SML;
@@ -93,6 +93,8 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 	// Tells whether or not sm is shared. relevant only for SMG.
 	this_Shared = Shared;				// SMG Shared? 1 if yes 0 if no
+
+
 	this_btbSize = btbSize;				// BTB Size ~ amount of lines in btb
 	this_histSize = historySize;		// History Size
 	this_tagSize = tagSize;				// Tag Size
@@ -108,24 +110,24 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 
 	// table initialization
-	this_bp->BPTable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
+	this_bp->BPtable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
 
-	if(!this_bp->BPTable) {
-		if (DEBUG) printf("malloc(): BPTable malloc failed\n");
+	if(!this_bp->BPtable) {
+		if (DEBUG) printf("malloc(): BPtable malloc failed\n");
 		free(this_bp);
        	return -1;
     }
 
 
 	for(uint32_t i = 0; i < this_btbSize; i++) {
-		this_bp->BPTable[i] = (unsigned*)malloc(2 * sizeof(unsigned)); // one for tag, one for prev destination
-		if(!this_bp->BPTable[i]) {
-			if (DEBUG) printf("malloc(): BPTable[%d] malloc failed\n", i);
+		this_bp->BPtable[i] = (unsigned*)malloc(2 * sizeof(unsigned)); // one for tag, one for prev destination
+		if(!this_bp->BPtable[i]) {
+			if (DEBUG) printf("malloc(): BPtable[%d] malloc failed\n", i);
 			//cleanup
 			for(uint32_t j = 0 ; j < i; j++) {
-				free(this_bp->BPTable[j]);
+				free(this_bp->BPtable[j]);
 			}
-			free(this_bp->BPTable);
+			free(this_bp->BPtable);
 			free(this_bp);
 			return -1;
 		}
@@ -133,7 +135,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 	// place holder value for each lines
 	for(uint32_t i = 0; i < this_btbSize; i++) {
-		this_bp->BPTable[i][0] = MAXUNSIGNED;
+		this_bp->BPtable[i][0] = MAXUNSIGNED;
 	}
 
 
@@ -144,7 +146,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
         if(!this_bp->HSGtable) {
 			if (DEBUG) printf("malloc(): HSGtable malloc failed\n");
-			free(this_bp->BPTable);
+			free(this_bp->BPtable);
 			free(this_bp);
 			return -1;
 		}
@@ -160,7 +162,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 		if(!this_bp->HSLtable){
 			printf("malloc(): HSLtable malloc failed\n");
-			free(this_bp->BPTable);
+			free(this_bp->BPtable);
 			free(this_bp);
 			return -1;
 		}
@@ -175,7 +177,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 					free(this_bp->HSLtable[j]);
 				}
 				free(this_bp->HSLtable);
-				free(this_bp->BPTable);
+				free(this_bp->BPtable);
 				free(this_bp);
 				return -1;
 			}
@@ -197,7 +199,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 		
 		if(!this_bp->SMG) {
 			if (DEBUG) printf("malloc(): SMG malloc failed\n");
-			free(this_bp->BPTable);
+			free(this_bp->BPtable);
 			free(this_bp);
 			// not freeing history here because its too complicated
 			return -1;
@@ -211,7 +213,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 		this_bp->SML = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
 		if(!this_bp->SML) {
 			if (DEBUG) printf("malloc(): SML malloc failed\n");
-			free(this_bp->BPTable);
+			free(this_bp->BPtable);
 			free(this_bp);
 			// not freeing history here because its too complicated
 			return -1;
@@ -251,25 +253,25 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
  */
 bool BP_predict(uint32_t pc, uint32_t *dst) {
 	uint32_t tag = ((pc / 4) / this_btbSize) % ((unsigned)pow(2, this_tagSize));
-	unsigned tag_idx = (pc / 4) % (this_btbSize);
+	unsigned lineNum = (pc / 4) % (this_btbSize);
 	bool result;
 	if (DEBUG) printf("BP_predict(): entered predict\n");
 	switch (bp_type) {
 
 		case SML_HSL:
-			result = SML_HSL_predict(pc, dst, tag_idx, tag);
+			result = SML_HSL_predict(pc, dst, lineNum, tag);
 			break;
 
 		case SMG_HSG:
-			result = SMG_HSG_predict(pc, dst, tag_idx, tag);
+			result = SMG_HSG_predict(pc, dst, lineNum, tag);
 			break;
 
 		case SML_HSG:
-			result = SML_HSG_predict(pc, dst, tag_idx, tag);
+			result = SML_HSG_predict(pc, dst, lineNum, tag);
 			break;
 
 		case SMG_HSL:
-			result = SMG_HSL_predict(pc, dst, tag_idx, tag);
+			result = SMG_HSL_predict(pc, dst, lineNum, tag);
 			break;
 
 		default:
@@ -299,26 +301,26 @@ bool BP_predict(uint32_t pc, uint32_t *dst) {
  * param[in] pred_dst - the predicted target address
  */
 void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
-	br_num++;
+	
 	uint32_t tag = ((pc / 4) / this_btbSize) % ((unsigned)pow(2, this_tagSize));
-	unsigned tag_idx = (pc / 4) % (this_btbSize);
+	unsigned lineNum = (pc / 4) % (this_btbSize);
 	if (DEBUG) printf("BP_update(): entered update\n");
 	switch (bp_type) {
 
 		case SML_HSL:
-			SML_HSL_update(taken, tag_idx, tag);
+			SML_HSL_update(taken, lineNum, tag);
 			break;
 
 		case SMG_HSG:
-			SMG_HSG_update(pc,  taken, tag_idx, tag);
+			SMG_HSG_update(pc,  taken, lineNum, tag);
 			break;
 
 		case SML_HSG:
-			SML_HSG_update(taken, tag_idx, tag);
+			SML_HSG_update(taken, lineNum, tag);
 			break;
 
 		case SMG_HSL:
-			SMG_HSL_update(pc, taken, tag_idx, tag);
+			SMG_HSL_update(pc, taken, lineNum, tag);
 			break;
 
 		default:
@@ -330,8 +332,8 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 			}		
 	}
 
-	this_bp->BPTable[tag_idx][1] = targetPc;//?
-
+	this_bp->BPtable[lineNum][1] = targetPc;
+	br_num++;
     if ((( pred_dst != pc + 4) && !taken) || ((targetPc != pred_dst) && taken)) {
 		if(DEBUG) printf("FLUSHED!\n");
         flush_num++;
@@ -382,7 +384,7 @@ void BP_GetStats(SIM_stats *currStats) {
 			}		
 	}
 	
-	free(this_bp->BPTable);
+	free(this_bp->BPtable);
 	free(this_bp);
 	return;
 }
@@ -392,18 +394,18 @@ void BP_GetStats(SIM_stats *currStats) {
 /* return true when prediction is taken,
  * return false when prediction is not taken) 
  */
-bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
+bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag) {
  //found the command
-	if(this_bp->BPTable[tag_idx][0] == tag) {
+	if(this_bp->BPtable[lineNum][0] == tag) {
 		int hist_val = 0;
 		for(uint32_t j = 0; j < this_histSize; j++) {
-			hist_val += (this_bp->HSLtable[tag_idx][j]) * (pow(2, (this_histSize-j-1)));
+			hist_val += (this_bp->HSLtable[lineNum][j]) * (pow(2, (this_histSize-j-1)));
 			// this translates from binary to decimal for array accessing
 		}
-		int predict_val = this_bp->SML[tag_idx][hist_val];
-		bool prediction = (predict_val == 0 || predict_val == 1)? false : true;
+		int predict_val = this_bp->SML[lineNum][hist_val];
+		bool prediction = (predict_val < WT)? false : true;
 		if(prediction) {
-			*dst = this_bp->BPTable[tag_idx][1];
+			*dst = this_bp->BPtable[lineNum][1];
 			
 		}
 		return prediction;
@@ -411,75 +413,82 @@ bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag)
 	return false;
 }
 
-bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
-	if(this_bp->BPTable[tag_idx][0] == tag) {
+bool SMG_HSG_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag) {
+	if(this_bp->BPtable[lineNum][0] == tag) {
 		int hist_val = 0;
 		for(uint32_t j = 0; j < this_histSize; j++) {
 			hist_val += (this_bp->HSGtable[j])*(pow(2, ((this_histSize)-j-1)));
 		}
-		int machine_address;
+		int smIndex;
 		//LSB share
 		if(this_Shared == 1) {
-			machine_address = ((pc/((unsigned)(pow(2,2))) % ((unsigned)pow(2, this_histSize)))^(hist_val));
+			//smIndex = ((pc/((unsigned)(pow(2,2))) % ((unsigned)pow(2, this_histSize))) ^ (hist_val));
+			smIndex = (pc/((unsigned)pow(2, 2))) % ((unsigned)pow(2, this_histSize));
+			smIndex = smIndex ^ hist_val;
 		}
 		//MSB share
 		else if(this_Shared == 2) {
-			machine_address = ((pc/((unsigned)(pow(2,16))) % ((unsigned)pow(2, this_histSize)))^(hist_val));
+			//smIndex = ((pc/((unsigned)(pow(2,16))) % ((unsigned)pow(2, this_histSize)))^(hist_val));
+			smIndex = (pc/((unsigned)pow(2, 2))) % ((unsigned)pow(2, this_histSize));
+			smIndex = smIndex ^ hist_val;
 		}
 		//No share
 		else {
-			machine_address = hist_val;
+			smIndex = hist_val;
 		}
-		int predict_val = this_bp->SMG[machine_address];
+		int predict_val = this_bp->SMG[smIndex];
 		bool prediction = (predict_val < WT) ? false : true;
 		if(prediction) {
-			*dst = this_bp->BPTable[tag_idx][1];
+			*dst = this_bp->BPtable[lineNum][1];
 		}
 		return prediction;
 	}
 	return false;
 }
 
-bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx , uint32_t tag) {
-	if(this_bp->BPTable[tag_idx][0] == tag){
+bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned lineNum , uint32_t tag) {
+	if(this_bp->BPtable[lineNum][0] == tag){
 		int hist_val = 0;
 		for(uint32_t i = 0; i < this_histSize; i++) {
 			hist_val += (this_bp->HSGtable[i]) * (pow(2, (this_histSize-i-1)));
 			// this translates from binary to decimal for array accessing
 		}
-		int predict_val = this_bp->SML[tag_idx][hist_val];
-		bool prediction = (predict_val == 0 || predict_val == 1) ? false : true;
+		int predict_val = this_bp->SML[lineNum][hist_val];
+		bool prediction = (predict_val < WT) ? false : true;
 		if(prediction) {
-			*dst = this_bp->BPTable[tag_idx][1];
+			*dst = this_bp->BPtable[lineNum][1];
 		}
 		return prediction;
 	}
 	return false;
 }
 
-bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag) {
-	if(this_bp->BPTable[tag_idx][0] == tag) {
+bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag) {
+	if(this_bp->BPtable[lineNum][0] == tag) {
 		int hist_val = 0;
 		for(uint32_t j = 0; j < this_histSize; j++) {
-			hist_val += (this_bp->HSLtable[tag_idx][j]) * (pow(2, (this_histSize-j-1)));
+			hist_val += (this_bp->HSLtable[lineNum][j]) * (pow(2, (this_histSize-j-1)));
 		}
-		int machine_address;
-		//LSB share
-		if(this_Shared == 1) {
-			machine_address = ((pc/((unsigned)(pow(2,2))) % ((unsigned)pow(2, this_histSize))) ^ (hist_val));
+		int smIndex;
+
+		switch (this_Shared) {
+			case 1://LSB share
+				smIndex = (((pc/4)%((unsigned)pow(2,this_histSize)))^(hist_val));
+				break;
+
+			case 2://MSB share
+				smIndex = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2,this_histSize)))^(hist_val));
+				break;
+			
+			default://No share
+				smIndex = hist_val;
+				break;
 		}
-		//MSB share
-		else if(this_Shared == 2) {
-			machine_address = ((pc/((unsigned)(pow(2,16))) % ((unsigned)pow(2, this_histSize))) ^ (hist_val));               
-		}
-		//No share
-		else {
-			machine_address = hist_val;
-		}
-		int predict_val = this_bp->SMG[machine_address];
-		bool prediction = (predict_val == 0 || predict_val == 1) ? false : true;
+
+		int predict_val = this_bp->SMG[smIndex];
+		bool prediction = (predict_val < WT) ? false : true;
 		if(prediction) {
-			*dst = this_bp->BPTable[tag_idx][1];
+			*dst = this_bp->BPtable[lineNum][1];
 		}
 		return prediction;
 	}
@@ -489,71 +498,74 @@ bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned tag_idx, uint32_t tag)
 
 // UPDATE FUNCTIONS
 // updates the predictor with actual decision (taken / not taken)
-void SML_HSL_update(bool taken, unsigned tag_idx, uint32_t tag){
+void SML_HSL_update(bool taken, unsigned lineNum, uint32_t tag){
 	//found the command
-	if (this_bp->BPTable[tag_idx][0] == tag) {
+	if (this_bp->BPtable[lineNum][0] == tag) {
 		int hist_val = 0;
 		for (uint32_t i = 0; i < this_histSize; i++) {
-			hist_val += (this_bp->HSLtable[tag_idx][i]) * (pow(2, (this_histSize - i - 1)));
+			hist_val += (this_bp->HSLtable[lineNum][i]) * (pow(2, (this_histSize - i - 1)));
 		}
 		//SM update
-		if (this_bp->SML[tag_idx][hist_val] != ST && taken) {
-			(this_bp->SML[tag_idx][hist_val])++;
+		if (this_bp->SML[lineNum][hist_val] != ST && taken) {
+			(this_bp->SML[lineNum][hist_val])++;
 		}
-		if (this_bp->SML[tag_idx][hist_val] != SNT && !taken) {
-			(this_bp->SML[tag_idx][hist_val])--;
+		if (this_bp->SML[lineNum][hist_val] != SNT && !taken) {
+			(this_bp->SML[lineNum][hist_val])--;
 		}
 		//History table update
 		for (uint32_t i = 0; i < this_histSize - 1; i++) {
-			this_bp->HSLtable[tag_idx][i] = this_bp->HSLtable[tag_idx][i + 1];
+			this_bp->HSLtable[lineNum][i] = this_bp->HSLtable[lineNum][i + 1];
 		}
-		this_bp->HSLtable[tag_idx][(this_histSize) - 1] = (taken) ? 1 : 0;
+		this_bp->HSLtable[lineNum][(this_histSize) - 1] = (taken) ? 1 : 0;
 	}
 	
 	//New command or same address for different command
 	else {
-		this_bp->BPTable[tag_idx][0] = tag;
+		this_bp->BPtable[lineNum][0] = tag;
 		for (uint32_t i = 0; i < pow(2, this_histSize); i++) {
-			this_bp->SML[tag_idx][i] = initState;
+			this_bp->SML[lineNum][i] = initState;
 		}
 		for (uint32_t i = 0; i < this_histSize; i++) {
-			this_bp->HSLtable[tag_idx][i]=0;
+			this_bp->HSLtable[lineNum][i]=0;
 		}
 		//SM update
-		if (this_bp->SML[tag_idx][0] != ST && taken) {
-			(this_bp->SML[tag_idx][0])++;
+		if (this_bp->SML[lineNum][0] != ST && taken) {
+			(this_bp->SML[lineNum][0])++;
 		}
-		if (this_bp->SML[tag_idx][0] != SNT && !taken) {
-			(this_bp->SML[tag_idx][0])--;
+		if (this_bp->SML[lineNum][0] != SNT && !taken) {
+			(this_bp->SML[lineNum][0])--;
 		}
-		this_bp->HSLtable[tag_idx][this_histSize -1] = (taken)? 1 : 0;
+		this_bp->HSLtable[lineNum][this_histSize -1] = (taken)? 1 : 0;
 	}
 }
 
-void SMG_HSG_update(uint32_t pc, bool taken, unsigned tag_idx, uint32_t tag){
-	this_bp->BPTable[tag_idx][0] = tag;
+void SMG_HSG_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
+	this_bp->BPtable[lineNum][0] = tag;
 	int hist_val = 0;
-	int machine_address;
 	for (uint32_t i = 0; i < this_histSize; i++) {
 		hist_val += (this_bp->HSGtable[i]) * (pow(2, ((this_histSize) - i - 1)));
 	}
-	//LSB share
-	if(this_Shared == 1){
-		machine_address = (((pc/4)%((unsigned)pow(2,this_histSize)))^(hist_val));
-	}
-	//MSB share
-	else if(this_Shared == 2){
-		machine_address = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2,this_histSize)))^(hist_val));
-	}
-	else {
-		machine_address = hist_val;
+	int smIndex;
+
+	switch (this_Shared) {
+		case 1://LSB share
+			smIndex = (((pc/4)%((unsigned)pow(2,this_histSize)))^(hist_val));
+			break;
+
+		case 2://MSB share
+			smIndex = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2,this_histSize)))^(hist_val));
+			break;
+		
+		default://No share
+			smIndex = hist_val;
+			break;
 	}
 
-	if (taken && this_bp->SMG[machine_address] != ST) {
-		this_bp->SMG[machine_address]++;
+	if (taken && this_bp->SMG[smIndex] != ST) {
+		this_bp->SMG[smIndex]++;
 	}
-	if (!taken && this_bp->SMG[machine_address] != SNT) {
-		this_bp->SMG[machine_address]--;
+	if (!taken && this_bp->SMG[smIndex] != SNT) {
+		this_bp->SMG[smIndex]--;
 	}
 	
 	//shift register
@@ -563,18 +575,18 @@ void SMG_HSG_update(uint32_t pc, bool taken, unsigned tag_idx, uint32_t tag){
 	this_bp->HSGtable[this_histSize - 1] = (taken) ? 1 : 0;
 }
 
-void SML_HSG_update(bool taken, unsigned tag_idx, uint32_t tag){
+void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag){
 	int hist_val = 0;
-	if (this_bp->BPTable[tag_idx][0] == tag) {
+	if (this_bp->BPtable[lineNum][0] == tag) {
 		for (uint32_t i = 0; i < this_histSize; i++) {
 			hist_val += (this_bp->HSGtable[i]) * (pow(2, ((this_histSize) - i - 1)));
 		}
 		//SM update
-		if (this_bp->SML[tag_idx][hist_val] != ST && taken) {
-			this_bp->SML[tag_idx][hist_val] ++;
+		if (this_bp->SML[lineNum][hist_val] != ST && taken) {
+			this_bp->SML[lineNum][hist_val] ++;
 		}
-		if (this_bp->SML[tag_idx][hist_val] != SNT && !taken) {
-			this_bp->SML[tag_idx][hist_val] --;
+		if (this_bp->SML[lineNum][hist_val] != SNT && !taken) {
+			this_bp->SML[lineNum][hist_val] --;
 		}
 		//History table update
 		for (uint32_t i = 0; i < this_histSize - 1; i++) {
@@ -585,19 +597,19 @@ void SML_HSG_update(bool taken, unsigned tag_idx, uint32_t tag){
 	//New command or same address for different command
 	else {
 		hist_val = 0;
-		this_bp->BPTable[tag_idx][0] = tag;
+		this_bp->BPtable[lineNum][0] = tag;
 		for (uint32_t j = 0; j < this_histSize; j++) {
 			hist_val += (this_bp->HSGtable[j]) * (pow(2, ((this_histSize) - j - 1)));
 		}
 		for (uint32_t j = 0; j < pow(2, this_histSize); j++) {
-			this_bp->SML[tag_idx][j] = initState;
+			this_bp->SML[lineNum][j] = initState;
 		}
 		//SM update
-		if (this_bp->SML[tag_idx][hist_val] != ST && taken) {
-			(this_bp->SML[tag_idx][hist_val])++;
+		if (this_bp->SML[lineNum][hist_val] != ST && taken) {
+			(this_bp->SML[lineNum][hist_val])++;
 		}
-		if (this_bp->SML[tag_idx][hist_val] != SNT && !taken) {
-			(this_bp->SML[tag_idx][hist_val])--;
+		if (this_bp->SML[lineNum][hist_val] != SNT && !taken) {
+			(this_bp->SML[lineNum][hist_val])--;
 		}
 
 		for (uint32_t j = 0; j < this_histSize - 1; j++) {
@@ -607,68 +619,71 @@ void SML_HSG_update(bool taken, unsigned tag_idx, uint32_t tag){
 	}
 }
 
-void SMG_HSL_update(uint32_t pc, bool taken, unsigned tag_idx, uint32_t tag){
+void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 	//found the command
-	if (this_bp->BPTable[tag_idx][0] == tag) {;
+	if (this_bp->BPtable[lineNum][0] == tag) {;
 		int hist_val = 0;
 		for (uint32_t i = 0; i < this_histSize; i++) {
-			hist_val += (this_bp->HSLtable[tag_idx][i]) * (pow(2, ((this_histSize) - i - 1)));
+			hist_val += (this_bp->HSLtable[lineNum][i]) * (pow(2, ((this_histSize) - i - 1)));
 		}
-		int machine_address;
-		//LSB share
-		if(this_Shared == 1){
-			machine_address = (((pc/4)%((unsigned)pow(2,this_histSize)))^(hist_val));
-		}
-		//MSB share
-		else if(this_Shared == 2){
-			machine_address = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2,this_histSize)))^(hist_val));
-		}
-		//No share
-		else{
-			machine_address = hist_val;
-		}
-		//SM update
-		if (this_bp->SMG[machine_address] != ST && taken) {
-			this_bp->SMG[machine_address] ++;
-		}
-		if (this_bp->SMG[machine_address] != SNT && !taken) {
-			this_bp->SMG[machine_address] --;
-		}
-		//History table update           
-		for (uint32_t i = 0; i < (this_histSize) - 1; i++) {
-			this_bp->HSLtable[tag_idx][i] = this_bp->HSLtable[tag_idx][i + 1];
-		}
-		this_bp->HSLtable[tag_idx][(this_histSize) - 1] = (taken) ? 1 : 0;
-	}
-	//New command or same address for different command
-	else {
-		this_bp->BPTable[tag_idx][0] = tag;           
-		int hist_val = 0;
-		for (uint32_t i = 0; i < this_histSize; i++) {
-			this_bp->HSLtable[tag_idx][i] = 0;
-		}
-		int machine_address;
-		//LSB share
-		if(this_Shared == 1){
-			machine_address = (((pc/4)%((unsigned)pow(2,this_histSize))) ^ (hist_val));
-		}
-		//MSB share
-		else if(this_Shared == 2){
-			machine_address = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2, this_histSize))) ^ (hist_val));
-		}
-		//No share
-		else{
-			machine_address = hist_val;
+		int smIndex;
+
+		switch (this_Shared) {
+			case 1://LSB share
+				smIndex = (((pc/4)%((unsigned)pow(2,this_histSize)))^(hist_val));
+				break;
+
+			case 2://MSB share
+				smIndex = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2,this_histSize)))^(hist_val));
+				break;
+			
+			default://No share
+				smIndex = hist_val;
+				break;
 		}
 		
 		//SM update
-		if (this_bp->SMG[machine_address] != ST && taken) {
-			this_bp->SMG[machine_address] ++;
+		if (this_bp->SMG[smIndex] != ST && taken) {
+			this_bp->SMG[smIndex] ++;
 		}
-		if (this_bp->SMG[machine_address] != SNT && !taken) {
-			this_bp->SMG[machine_address] --;
+		if (this_bp->SMG[smIndex] != SNT && !taken) {
+			this_bp->SMG[smIndex] --;
+		}
+		//History table update           
+		for (uint32_t i = 0; i < (this_histSize) - 1; i++) {
+			this_bp->HSLtable[lineNum][i] = this_bp->HSLtable[lineNum][i + 1];
+		}
+		this_bp->HSLtable[lineNum][(this_histSize) - 1] = (taken) ? 1 : 0;
+	}
+	//New command or same address for different command
+	else {
+		this_bp->BPtable[lineNum][0] = tag;           
+		int hist_val = 0;
+		for (uint32_t i = 0; i < this_histSize; i++) {
+			this_bp->HSLtable[lineNum][i] = 0;
+		}
+		int smIndex;
+		//LSB share
+		if(this_Shared == 1){
+			smIndex = (((pc/4)%((unsigned)pow(2,this_histSize))) ^ (hist_val));
+		}
+		//MSB share
+		else if(this_Shared == 2){
+			smIndex = ((pc/((unsigned)(pow(2,16)))%((unsigned)pow(2, this_histSize))) ^ (hist_val));
+		}
+		//No share
+		else{
+			smIndex = hist_val;
+		}
+		
+		//SM update
+		if (this_bp->SMG[smIndex] != ST && taken) {
+			this_bp->SMG[smIndex] ++;
+		}
+		if (this_bp->SMG[smIndex] != SNT && !taken) {
+			this_bp->SMG[smIndex] --;
 		}
 
-		this_bp->HSLtable[tag_idx][this_histSize - 1] = (taken) ? 1 : 0;
+		this_bp->HSLtable[lineNum][this_histSize - 1] = (taken) ? 1 : 0;
 	}
 }
