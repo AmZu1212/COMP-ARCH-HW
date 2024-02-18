@@ -1,5 +1,14 @@
-/* 046267 Computer Architecture - HW #1                                 */
-/* This file should hold your implementation of the predictor simulator */
+/* 046267 Computer Architecture - HW #1 */
+
+/* BP - Final Version 1.2.18
+ * 
+ *  Written by:
+ *   _______________________
+ *	|						|
+ *	|	Amir "Zubi" Zuabi	|
+ *	|	  &  Liz Dushkin	|
+ * 	|_______________________|
+ */
 
 #include "bp_api.h"
 #include <stdio.h>
@@ -9,9 +18,9 @@
 #include <math.h>
 
 // Parameters
-#define DEBUG 0
-#define MAXUNSIGNED 4294967295
-#define ADDRESS 30
+#define DEBUG 0					// toggle for debug prints (1). leave on 0.
+#define ADDRESS_SIZE 30 		// bottom 2 bits are always 0
+#define MAXUNSIGNED 4294967295	// max integer limit as a placeholder value.
 
 // Prediction Functions
 bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
@@ -36,12 +45,20 @@ uint32_t GetTag(uint32_t pc);
 unsigned GetLineNum(uint32_t pc);
 
 
-//	Definitions:
-//		SM - State Machine ~  מכונת מצבים
-//		HS - History ~ היסטוריה
-//		G - Global ~ גלובלי
-//		L - local ~ לוקאלי
-//		this_Shared ~ רלוונטי רק כאשר SMG
+// Calcs stats at run end
+unsigned CalcStats();
+
+
+//	Legend:
+//		  _____________________________________
+//		||									   
+//		||  SM - State Machine ~ מכונת מצבים  
+//		||  HS - History ~ היסטוריה			  
+//		||  G - Global  ~ גלובלי			  
+//		||  L - local   ~ לוקאלי			  
+//		||  this_Shared ~ SMG במצב רק כאשר 	  
+//		||_____________________________________
+//
 
 // type definitions
 // SM States
@@ -361,35 +378,11 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
  * curStats: The returned current simulator state (only after BP_update)
  */
 void BP_GetStats(SIM_stats *currStats) {
+	if (DEBUG) printf("BP_GetStats(): entered stats\n");
+	unsigned size = CalcStats();
+	currStats->size = size;
 	currStats->br_num = br_num;
     currStats->flush_num = flush_num;
-	if (DEBUG) printf("BP_GetStats(): entered stats\n");
-	switch (bp_type) {
-
-		case SML_HSL:
-			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + this_histSize + 2 * pow(2.0, (double)this_histSize));	
-			break;
-
-		case SMG_HSG:
-			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1)  + this_histSize + 2 * pow(2.0, (double)this_histSize);
-			break;
-
-		case SML_HSG:
-			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + 2 * pow(2.0, (double)this_histSize)) + this_histSize;
-			break;
-
-		case SMG_HSL:
-			currStats->size = this_btbSize * (ADDRESS + this_tagSize + 1 + this_histSize) + 2 * pow(2.0, (double)this_histSize);
-			break;
-
-		default:
-			if (DEBUG) {
-				printf("BP_GetStats(): switch failed, ");
-				printf("invalid type or non-branch command");
-				printf("(not supposed to get here)\n");
-			}		
-	}
-	
 	free(this_bp->SML);		
 	free(this_bp->SMG);
 	free(this_bp->HSGtable);
@@ -402,7 +395,7 @@ void BP_GetStats(SIM_stats *currStats) {
 
 // PREDICTION FUNCTIONS
 /* return true when prediction is taken,
- * return false when prediction is not taken) 
+ * return false when prediction is not taken
  */
 bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag) {
  //found the command
@@ -575,7 +568,6 @@ void SML_HSL_update(bool taken, unsigned lineNum, uint32_t tag){
 	this_bp->HSLtable[lineNum][this_histSize - 1] = (int)taken;
 }
 
-
 void SMG_HSG_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 	this_bp->BPtable[lineNum][0] = tag;
 	int historyValue = 0;
@@ -626,7 +618,6 @@ void SMG_HSG_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 	this_bp->HSGtable[this_histSize - 1] = (int)taken;
 }
 
-
 void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag){
 	int historyValue = 0;
 	for (uint32_t i = 0; i < this_histSize; i++) {
@@ -669,7 +660,6 @@ void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag){
 	// history bit fill
 	this_bp->HSGtable[this_histSize - 1] = (int)taken;
 }
-
 
 void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 	//found the command
@@ -756,4 +746,27 @@ uint32_t GetTag(uint32_t pc) {
 // parses line out of the pc
 unsigned GetLineNum(uint32_t pc){
 	return ((pc / 4) % this_btbSize);
+}
+
+// statistic formulas, returns BP size (depends on bp_type)
+unsigned CalcStats(){
+	unsigned size;
+	switch (bp_type) {
+		case SML_HSL:
+			size = this_btbSize * (ADDRESS_SIZE + this_tagSize + 1 + this_histSize + 2 * pow(2.0, (double)this_histSize));	
+			break;
+
+		case SMG_HSG:
+			size = this_btbSize * (ADDRESS_SIZE + this_tagSize + 1)  + this_histSize + 2 * pow(2.0, (double)this_histSize);
+			break;
+
+		case SML_HSG:
+			size = this_btbSize * (ADDRESS_SIZE + this_tagSize + 1 + 2 * pow(2.0, (double)this_histSize)) + this_histSize;
+			break;
+
+		case SMG_HSL:
+			size = this_btbSize * (ADDRESS_SIZE + this_tagSize + 1 + this_histSize) + 2 * pow(2.0, (double)this_histSize);
+			break;	
+	}
+	return size;
 }
