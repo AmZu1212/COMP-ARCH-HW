@@ -18,8 +18,9 @@
 #include <math.h>
 
 // Parameters
-#define DBG 0					// toggle for debug prints (1). leave on 0.
+#define DEBUG 0					// toggle for debug prints (1). leave on 0.
 #define ADDRESS_SIZE 30 		// bottom 2 bits are always 0
+#define MAXUNSIGNED 4294967295	// max integer limit as a placeholder value.
 
 // Prediction Functions
 bool SML_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag);
@@ -33,11 +34,6 @@ void SMG_HSG_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag);
 void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag);
 void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag);
 
-// Init Functions
-int SMG_init();
-int SML_init();
-int HSG_init();
-int HSL_init();
 
 // Sharing Functions
 int GetLSBShare(uint32_t pc, int history, int bits);
@@ -115,23 +111,21 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	// type classification for signature functions.
 	if((!isGlobalTable) && (!isGlobalHist)) {
 		bp_type = SML_HSL;
-		if (DBG) printf("type is SML_HSL\n");
 	}
 	else if((isGlobalTable) && (isGlobalHist)){
 		bp_type = SMG_HSG;
-		if (DBG) printf("type is SMG_HSG\n");
 	}
 	else if((!isGlobalTable) && (isGlobalHist)){
 		bp_type = SML_HSG;
-		if (DBG) printf("type is SML_HSG\n");
 	}
 	else if((isGlobalTable) && (!isGlobalHist)){
 		bp_type = SMG_HSL;
-		if (DBG) printf("type is SMG_HSL\n");
 	}
-	
+
 	// Tells whether or not sm is shared. relevant only for SMG.
 	this_Shared = Shared;				// SMG Shared? 1 if yes 0 if no
+
+
 	this_btbSize = btbSize;				// BTB Size ~ amount of lines in btb
 	this_histSize = historySize;		// History Size
 	this_tagSize = tagSize;				// Tag Size
@@ -141,7 +135,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	// this_bp initialization
 	this_bp = (struct bp_t*)malloc(sizeof(struct bp_t));
 	if(!this_bp) {
-		if (DBG) printf("malloc(): this_bp malloc failed\n");
+		if (DEBUG) printf("malloc(): this_bp malloc failed\n");
        	return -1;
     }
 
@@ -150,7 +144,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	this_bp->BPtable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
 
 	if(!this_bp->BPtable) {
-		if (DBG) printf("malloc(): BPtable malloc failed\n");
+		if (DEBUG) printf("malloc(): BPtable malloc failed\n");
 		free(this_bp);
        	return -1;
     }
@@ -159,7 +153,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	for(uint32_t i = 0; i < this_btbSize; i++) {
 		this_bp->BPtable[i] = (unsigned*)malloc(2 * sizeof(unsigned)); // one for tag, one for prev destination
 		if(!this_bp->BPtable[i]) {
-			if (DBG) printf("malloc(): BPtable[%d] malloc failed\n", i);
+			if (DEBUG) printf("malloc(): BPtable[%d] malloc failed\n", i);
 			//cleanup
 			for(uint32_t j = 0 ; j < i; j++) {
 				free(this_bp->BPtable[j]);
@@ -172,74 +166,112 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 
 	// place holder value for each lines
 	for(uint32_t i = 0; i < this_btbSize; i++) {
-		this_bp->BPtable[i][0] = 0;
+		this_bp->BPtable[i][0] = MAXUNSIGNED;
 	}
 
-	int sm = -2;
-	int hst = -2;
-	switch (bp_type) {
 
-		case SML_HSL:
-			sm =  SML_init();
-			hst = HSL_init();
-			if(sm < 0 || hst < 0) {
-				if (DBG) printf("BP_init(): SML_HSL allocation failed failed\n");
-				free(this_bp->BPtable);
-				free(this_bp);
-				return -1;
-			}
-			
-			break;
+	// history initizalization this_bp->HSGtable
+	if(bp_type == SMG_HSG || bp_type == SML_HSG) {
 
-		case SMG_HSG:
-			sm =  SMG_init();
-			hst = HSG_init();
-			if(sm < 0 || hst < 0) {
-				if (DBG) printf("BP_init(): SMG_HSG allocation failed failed\n");
-				free(this_bp->BPtable);
-				free(this_bp);
-				return -1;
-			}
-			
-			break;
+        this_bp->HSGtable = (unsigned*)malloc(this_histSize *  sizeof(unsigned));
 
-		case SML_HSG:
-			sm =  SML_init();
-			hst = HSG_init();
-			if(sm < 0 || hst < 0) {
-				if (DBG) printf("BP_init(): SML_HSG allocation failed failed\n");
-				free(this_bp->BPtable);
-				free(this_bp);
-				return -1;
-			}
-			
-			break;
-
-		case SMG_HSL:
-			sm =  SMG_init();
-			hst = HSL_init();
-			if(sm < 0 || hst < 0) {
-				if (DBG) printf("BP_init(): SMG_HSL allocation failed failed\n");
-				free(this_bp->BPtable);
-				free(this_bp);
-				return -1;
-			}
-			
-			break;
-
-		default:
-			if (DBG) 
-			{
-				printf("BP_init(): switch failed, ");
-				printf("invalid type");
-				printf("(not supposed to get here)\n");
-			}
+        if(!this_bp->HSGtable) {
+			if (DEBUG) printf("malloc(): HSGtable malloc failed\n");
 			free(this_bp->BPtable);
 			free(this_bp);
 			return -1;
+		}
+
+		// init history to 0
+        for(uint32_t i = 0; i < this_histSize; i++) {
+        	this_bp->HSGtable[i] = 0;
+        }
+	}
+	else { // SMG_HSL or SML_HSL
+
+		this_bp->HSLtable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*)); //rows
+
+		if(!this_bp->HSLtable){
+			printf("malloc(): HSLtable malloc failed\n");
+			free(this_bp->BPtable);
+			free(this_bp);
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+        	this_bp->HSLtable[i] = (unsigned*)malloc(this_histSize * sizeof(unsigned)); //columns
+			if(this_bp->HSLtable[i] == NULL) {
+				if (DEBUG) printf("malloc(): HSLtable[%d] malloc failed\n", i);
+				//cleanup
+				
+				for(uint32_t j = 0 ; j < i; j++) {
+					free(this_bp->HSLtable[j]);
+				}
+				free(this_bp->HSLtable);
+				free(this_bp->BPtable);
+				free(this_bp);
+				return -1;
+			}
+		}
+
+		// init histories to 0
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+            for( uint32_t j = 0; j < this_histSize; j++) {
+            	this_bp->HSLtable[i][j] = 0;
+            }
+        }
 	}
 
-	if (DBG) printf("BP_init(): left init successfully\n");
+
+	// state machines initizalization (global then local)
+	if(bp_type == SMG_HSG || bp_type == SMG_HSL) {
+
+        this_bp->SMG = (unsigned*)malloc((pow(2, this_histSize))*sizeof(unsigned));
+		
+		if(!this_bp->SMG) {
+			if (DEBUG) printf("malloc(): SMG malloc failed\n");
+			free(this_bp->BPtable);
+			free(this_bp);
+			// not freeing history here because its too complicated
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < (pow(2, this_histSize)); i++) {
+        	this_bp->SMG[i] = (unsigned)initState;
+        }
+	} else {
+
+		this_bp->SML = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
+		if(!this_bp->SML) {
+			if (DEBUG) printf("malloc(): SML malloc failed\n");
+			free(this_bp->BPtable);
+			free(this_bp);
+			// not freeing history here because its too complicated
+			return -1;
+		}
+
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+        	this_bp->SML[i] = (unsigned*)malloc(pow(2, this_histSize) * sizeof(unsigned));
+			if(this_bp->SML == NULL) {
+				if (DEBUG) printf("malloc(): SML[%d] malloc failed\n", i);
+				for(uint32_t j = 0 ; j < i; j++) {
+					free(this_bp->SML[j]);
+				}
+				return -1;
+				// not freeing history here because its too complicated
+			}
+			
+        }
+
+		// initializes state machines to initial state
+        for(uint32_t i = 0; i < this_btbSize; i++) {
+            for( uint32_t j = 0; j < pow(2, this_histSize); j++) {
+            	this_bp->SML[i][j] = (unsigned)initState;
+            }
+        }
+	}
+
+	if (DEBUG) printf("BP_init(): left init successfully\n");
 	return 0;
 }
 
@@ -254,7 +286,7 @@ bool BP_predict(uint32_t pc, uint32_t *dst) {
 	uint32_t tag = GetTag(pc);
 	unsigned lineNum = GetLineNum(pc);
 	bool result;
-	if (DBG) printf("BP_predict(): entered predict\n");
+	if (DEBUG) printf("BP_predict(): entered predict\n");
 	switch (bp_type) {
 
 		case SML_HSL:
@@ -274,7 +306,7 @@ bool BP_predict(uint32_t pc, uint32_t *dst) {
 			break;
 
 		default:
-			if (DBG) {
+			if (DEBUG) {
 				printf("BP_predict(): switch failed, ");
 				printf("invalid type or non-branch command");
 				printf("(not supposed to get here)\n");
@@ -303,7 +335,7 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 	
 	uint32_t tag = GetTag(pc);
 	unsigned lineNum = GetLineNum(pc);
-	if (DBG) printf("BP_update(): entered update\n");
+	if (DEBUG) printf("BP_update(): entered update\n");
 	switch (bp_type) {
 
 		case SML_HSL:
@@ -323,7 +355,7 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 			break;
 
 		default:
-			if (DBG) 
+			if (DEBUG) 
 			{
 				printf("BP_update(): switch failed, ");
 				printf("invalid type or non-branch command");
@@ -334,7 +366,7 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 	this_bp->BPtable[lineNum][1] = targetPc;
 	br_num++;
     if ((( pred_dst != pc + 4) && !taken) || ((targetPc != pred_dst) && taken)) {
-		if(DBG) printf("FLUSHED!\n");
+		if(DEBUG) printf("FLUSHED!\n");
         flush_num++;
     }
 	return;
@@ -346,138 +378,18 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
  * curStats: The returned current simulator state (only after BP_update)
  */
 void BP_GetStats(SIM_stats *currStats) {
-	if (DBG) printf("BP_GetStats(): entered stats\n");
+	if (DEBUG) printf("BP_GetStats(): entered stats\n");
 	unsigned size = CalcStats();
 	currStats->size = size;
 	currStats->br_num = br_num;
     currStats->flush_num = flush_num;
-	/*
-	if (DBG) printf("BP_GetStats(): ended for 1\n");
-	if(!this_bp->SML) {
-		for(uint32_t i = 0; i < this_btbSize; i++) {
-			if (DBG) printf("BP_GetStats(): freeing SML[%d]\n", i);
-			if (DBG) printf("BP_GetStats(): SML[%d] = %d\n", i, (int)this_bp->SML[i]);
-			//free(this_bp->SML[i]);
-		}
-	}
-	//crashes up here^
-	if (DBG) printf("BP_GetStats(): ended for 1\n");
-	if(!this_bp->HSLtable) {
-		for(uint32_t i = 0; i < this_btbSize; i++) {
-			if (DBG) printf("BP_GetStats(): freeing HSLtable[%d]\n", i);
-			//free(this_bp->HSLtable[i]);
-		}
-	}*/
-
-	free(this_bp->SML);
+	free(this_bp->SML);		
 	free(this_bp->SMG);
 	free(this_bp->HSGtable);
 	free(this_bp->HSLtable);
 	free(this_bp->BPtable);
 	free(this_bp);
 	return;
-}
-
-// INITIALIZATION FUNCTIONS
-/* returns 0 when successful memory allocations
- * returns 1 when some malloc fails, frees everything that was allocated
- */
-
-int SMG_init() {
-	this_bp->SMG = (unsigned*)malloc((pow(2, this_histSize)) * sizeof(unsigned));	
-	if(!this_bp->SMG) {
-		// clear memory if malloc fails
-		if (DBG) printf("malloc(): SMG malloc failed\n");
-		return -1;
-	}
-
-	for(uint32_t i = 0; i < (pow(2, this_histSize)); i++) {
-		this_bp->SMG[i] = (unsigned)initState;
-	}
-
-	if (DBG) printf("malloc(): SMG malloc successful\n");
-	return 0;
-}
-
-int SML_init(){
-	this_bp->SML = (unsigned**)malloc(this_btbSize * sizeof(unsigned*));
-	if(!this_bp->SML) {
-		// clear memory if malloc fails
-		if (DBG) printf("malloc(): SML malloc failed\n");
-		return -1;
-	}
-
-	for(uint32_t i = 0; i < this_btbSize; i++) {
-		this_bp->SML[i] = (unsigned*)malloc(pow(2, this_histSize) * sizeof(unsigned));
-		if(this_bp->SML[i] == NULL) {
-			// clear memory if some malloc fails.
-			if (DBG) printf("malloc(): SML[%d] malloc failed\n", i);
-			for(uint32_t j = 0 ; j < i; j++) {
-				free(this_bp->SML[j]);
-			}
-			free(this_bp->SML);
-			return -1;
-		}
-		
-	}
-
-	// initializes state machines to initial state
-	for(uint32_t i = 0; i < this_btbSize; i++) {
-		for( uint32_t j = 0; j < pow(2, this_histSize); j++) {
-			this_bp->SML[i][j] = (unsigned)initState;
-		}
-	}
-
-	if (DBG) printf("malloc(): SML malloc successful\n");
-	return 0;
-}
-
-int HSG_init(){
-	this_bp->HSGtable = (unsigned*)malloc(this_histSize *  sizeof(unsigned));
-
-	if(!this_bp->HSGtable) {
-		if (DBG) printf("malloc(): HSGtable malloc failed\n");
-		return -1;
-	}
-
-	// init history to 0
-	for(uint32_t i = 0; i < this_histSize; i++) {
-		this_bp->HSGtable[i] = 0;
-	}
-
-	if (DBG) printf("malloc(): HSGtable malloc successful\n");
-	return 0;
-}
-
-int HSL_init(){
-	this_bp->HSLtable = (unsigned**)malloc(this_btbSize * sizeof(unsigned*)); //rows
-
-	if(!this_bp->HSLtable){
-		printf("malloc(): HSLtable malloc failed\n");
-		return -1;
-	}
-
-	for(uint32_t i = 0; i < this_btbSize; i++) {
-		this_bp->HSLtable[i] = (unsigned*)malloc(this_histSize * sizeof(unsigned));
-		if(this_bp->HSLtable[i] == NULL) {
-			// clear memory
-			if (DBG) printf("malloc(): HSLtable[%d] malloc failed\n", i);			
-			for(uint32_t j = 0 ; j < i; j++) {
-				free(this_bp->HSLtable[j]);
-			}
-			free(this_bp->HSLtable);
-			return -1;
-		}
-	}
-
-	// init histories to 0
-	for(uint32_t i = 0; i < this_btbSize; i++) {
-		for( uint32_t j = 0; j < this_histSize; j++) {
-			this_bp->HSLtable[i][j] = 0;
-		}
-	}
-	if (DBG) printf("malloc(): HSLtable malloc successful\n");
-	return 0;
 }
 
 
@@ -563,7 +475,6 @@ bool SML_HSG_predict(uint32_t pc, uint32_t *dst, unsigned lineNum , uint32_t tag
 }
 
 bool SMG_HSL_predict(uint32_t pc, uint32_t *dst, unsigned lineNum, uint32_t tag) {
-	
 	if(this_bp->BPtable[lineNum][0] == tag) {
 		int historyValue = 0;
 		for(uint32_t i = 0; i < this_histSize; i++) {
@@ -751,25 +662,20 @@ void SML_HSG_update(bool taken, unsigned lineNum, uint32_t tag){
 }
 
 void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
-	// command found
+	//found the command
 	int historyValue = 0;
-	if (this_bp->BPtable[lineNum][0] == tag) {
+	if (this_bp->BPtable[lineNum][0] == tag) {;
 		// get history for sm index
 		for (uint32_t i = 0; i < this_histSize; i++) {
 			int bitWeight = pow(2, this_histSize - i - 1);
 			historyValue += this_bp->HSLtable[lineNum][i] * bitWeight;
 		}
-		
-		//History table update           
-		for (uint32_t j = 0; j < this_histSize - 1; j++) {
-			this_bp->HSLtable[lineNum][j] = this_bp->HSLtable[lineNum][j + 1];
-		}
 	}
-	else {
-		//same mapping for different command
-		this_bp->BPtable[lineNum][0] = tag;           
-		for (uint32_t j = 0; j < this_histSize; j++) {
-			this_bp->HSLtable[lineNum][j] = 0;
+	else { //New command
+		this_bp->BPtable[lineNum][0] = tag;    
+		// resetting history for local entry       
+		for (uint32_t i = 0; i < this_histSize; i++) {
+			this_bp->HSLtable[lineNum][i] = 0;
 		}
 	}
 
@@ -789,6 +695,7 @@ void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 			break;
 	}
 	
+
 	// SM update
 	if(taken) { 
 		// was taken
@@ -800,9 +707,10 @@ void SMG_HSL_update(uint32_t pc, bool taken, unsigned lineNum, uint32_t tag){
 		// was not taken
 		if (this_bp->SMG[smIndex] != SNT) { // isnt minimal
 			this_bp->SMG[smIndex]--;
-		}
+		}		
 	}
 
+	// History first bit fill
 	this_bp->HSLtable[lineNum][this_histSize - 1] = (int)taken;
 }
 
@@ -837,13 +745,11 @@ uint32_t GetTag(uint32_t pc) {
 
 // parses line out of the pc
 unsigned GetLineNum(uint32_t pc){
-	unsigned line = (pc / 4) % this_btbSize;
-	return line;
+	return ((pc / 4) % this_btbSize);
 }
 
 // statistic formulas, returns BP size (depends on bp_type)
 unsigned CalcStats(){
-	if(DBG) printf("CalcStats(): entered CalcStats\n");
 	unsigned size;
 	switch (bp_type) {
 		case SML_HSL:
@@ -862,6 +768,5 @@ unsigned CalcStats(){
 			size = this_btbSize * (ADDRESS_SIZE + this_tagSize + 1 + this_histSize) + 2 * pow(2.0, (double)this_histSize);
 			break;	
 	}
-	if(DBG) printf("CalcStats(): left CalcStats\n");
 	return size;
 }
