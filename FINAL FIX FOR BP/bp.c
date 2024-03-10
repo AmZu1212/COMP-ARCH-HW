@@ -5,8 +5,8 @@
  *  Written by:
  *   _______________________
  *	|						|
- *	|	Amir "Zubi" Zuabi	|
- *	|	  &  Liz Dushkin	|
+ *	|		Amir Zuabi		|
+ *	|	  & Liz Dushkin		|
  * 	|_______________________|
  */
 
