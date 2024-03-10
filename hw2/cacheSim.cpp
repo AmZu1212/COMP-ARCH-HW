@@ -13,6 +13,7 @@ using std::stringstream;
 
 int main(int argc, char **argv) {
 
+	// QUICK ARG CHECK
 	if (argc < 19) {
 		cerr << "Not enough arguments" << endl;
 		return 0;
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	// PARAMETERS AQUISITION
 	unsigned MemCyc = 0, BSize = 0, L1Size = 0, L2Size = 0, L1Assoc = 0,
 			L2Assoc = 0, L1Cyc = 0, L2Cyc = 0, WrAlloc = 0;
 
