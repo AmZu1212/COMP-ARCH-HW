@@ -1,3 +1,4 @@
+
 /* 046267 Computer Architecture - Winter 20/21 - HW #2 */
 
 #include <cstdlib>
@@ -59,10 +60,10 @@ number of lines = 2^set size
 
 /* Global parametrs*/
 double L1_total_hit = 0;
-double L1_total_miss = 0;
+//double L1_total_miss = 0;
 double L1_total_access = 0;
 double L2_total_hit = 0;
-double L2_total_miss = 0;
+//double L2_total_miss = 0;
 double L2_total_access = 0;
 double Total_Access_time = 0;
 double memory_total_Access = 0;
@@ -91,28 +92,29 @@ struct Addresses{
 
 struct Cache{
 	unsigned Block_size;
-	unsigned L1Size;
-	unsigned L2Size;
-	unsigned L1Assoc;
-	unsigned L2Assoc;
 	unsigned MemCyc;
-	unsigned L1Cyc;
-	unsigned L2Cyc;
 	unsigned WrAlloc;
 
-	unsigned num_ways_1;
-	unsigned num_ways_2;
-	unsigned num_blocks_1;
-	unsigned num_blocks_2;
-	unsigned set_size_1;
-	unsigned set_size_2;
-	unsigned num_lines_1;
-	unsigned num_lines_2;
-
+	
 	unsigned** Cache_L1;
-	unsigned** Cache_L2;
-
 	unsigned* Least_used_1;
+	unsigned set_size_1;
+	unsigned num_blocks_1;
+	unsigned num_lines_1;
+	unsigned num_ways_1;
+	unsigned L1Cyc;
+	unsigned L1Size;
+	unsigned L1Assoc;
+
+
+	unsigned** Cache_L2;
+	unsigned num_ways_2;
+	unsigned L2Size;
+	unsigned L2Cyc;
+	unsigned L2Assoc;
+	unsigned num_blocks_2;
+	unsigned set_size_2;
+	unsigned num_lines_2;
 	unsigned* Least_used_2;
 };
 
