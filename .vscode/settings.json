@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "stdbool.h": "c",
-        "cmath": "c"
-    },
-    "cmake.configureOnOpen": true
-}

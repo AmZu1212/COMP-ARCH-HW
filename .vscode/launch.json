@@ -1,15 +1,23 @@
 {
     "version": "0.2.0",
     "configurations": [
-      {
-        "name": "C++ Launch",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/main_bp",
-        "args": [],
-        "cwd": "${workspaceFolder}",
-        "preLaunchTask": "make",
-      }
+        {
+            "name": "C++ Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bp_main",
+            "args": ["modded_test14.trc"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
     ]
-  }
-  
+}
