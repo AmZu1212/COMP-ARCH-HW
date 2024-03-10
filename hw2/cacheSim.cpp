@@ -187,28 +187,32 @@ int main(int argc, char **argv)
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
 		// ========================== TAG CALCS???
+		tag_L1 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L1.set_size)));
+		set_L1 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L1.set_size);
 
+		tag_L2 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L2.set_size)));
+		set_L2 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L2.set_size);
+
+		current_address = num;
+		Calculate_Set_Tag(num);
 		//==========================================
 		Cache_Feed(operation);
 	}
 
+	// statistics calculations:
 	double L1MissRate = (L1_accesses - L1_hits) / L1_accesses;
 	double L2MissRate = (L2_accesses - L2_hits) / L2_accesses;
-
 	double avgAccTime = Total_Access_time / Total_Access; /*<--------------------- this line needs to be changed*/
-
+	// ================================================================
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
 	printf("AccTimeAvg=%.03f\n", avgAccTime);
 
 	// YOU NEED TO FREE MEMORY DOWN HERE <-----------------------------------------------------
-	/*free(cache->Cache_L1);
-	free(cache->Cache_L2);
-	free(cache->Least_used_1);
-	free(cache->Least_used_2);
-	free(cache);
-	free(addresses);*/
-
+	free(L1.least_used);
+	free(L2.least_used);
+	free(L1.cache);
+	free(L2.cache);
 	return 0;
 }
 
@@ -218,6 +222,9 @@ void init_Caches()
 
 void Cache_Feed(char operation)
 {
+
+
+	
 }
 
 void Cache_Read()
