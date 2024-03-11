@@ -47,9 +47,9 @@ double L1_accesses = 0;
 double L2_hits = 0;
 double L2_accesses = 0;
 //
-double Total_Access_time = 0;
-double memory_total_Access = 0;
-double Total_Access = 0;
+double Total_Access_Time = 0;
+double Memory_Total_Access = 0;
+double Total_Accesses = 0;
 //
 
 //???
@@ -189,7 +189,6 @@ int main(int argc, char **argv)
 		// ========================== TAG CALCS???
 		tag_L1 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L1.set_size)));
 		set_L1 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L1.set_size);
-
 		tag_L2 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L2.set_size)));
 		set_L2 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L2.set_size);
 
@@ -202,7 +201,7 @@ int main(int argc, char **argv)
 	// statistics calculations:
 	double L1MissRate = (L1_accesses - L1_hits) / L1_accesses;
 	double L2MissRate = (L2_accesses - L2_hits) / L2_accesses;
-	double avgAccTime = Total_Access_time / Total_Access; /*<--------------------- this line needs to be changed*/
+	double avgAccTime = Total_Access_Time / Total_Accesses; /*<--------------------- this line needs to be changed*/
 	// ================================================================
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
@@ -218,21 +217,156 @@ int main(int argc, char **argv)
 
 void init_Caches()
 {
+	
 }
 
 void Cache_Feed(char operation)
 {
-
-
-	
+	if (operation == 'r')
+	{
+		Cache_Read();
+	}
+	else
+	{
+		Cache_Write();
+	}
 }
 
 void Cache_Read()
 {
+	Total_Accesses++;
+	bool found_1 = Search(tag_L1, set_L1, L1_cache);
+	int found_1_int = (found_1) ? 1 : 0;
+	if (found_1_int)
+	{
+		// L1 READ HIT
+		L1_accesses++;
+		L1_hits++;
+		Total_Access_Time += L1.num_of_cycles;
+		Update_LRU(set_L1, L1_cache);
+	}
+	else
+	{
+		// L1 READ MISS
+		L1_accesses++;
+		L2_accesses++;
+		bool found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2)
+		{
+			// L2 READ HIT
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
+			L2_hits++;
+			Update_LRU(set_L2, L2_cache);
+			Insert(tag_L1, set_L1, L1_cache);
+		}
+		else
+		{
+			// L2 READ MISS
+			Memory_Total_Access++;
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
+			Calculate_Set_Tag(current_address);
+			Insert(current_tag_L2, current_set_L2, L2_cache);
+			Insert(current_tag_L1, current_set_L1, L1_cache);
+		}
+	}
 }
 
 void Cache_Write()
 {
+	if (Write_Allocate)
+	{
+		Write_No_Allocate();
+	}
+	else
+	{
+		Write_Allocate();
+	}
+}
+
+void Write_Allocate()
+{
+	Total_Accesses++;
+	bool found_1 = Search(tag_L1, set_L1, L1_cache);
+	int found_1_int = (found_1) ? 1 : 0;
+
+	if (found_1_int)
+	{
+		// L1 WRITE HIT
+		L1_accesses++;
+		L1_hits++;
+		Total_Access_Time += L1.num_of_cycles;
+		Update_LRU(set_L1, L1_cache);
+		L1.cache[set_L1][location_found_1 + DIRTY] = 1;
+		L1.cache[set_L1][location_found_1 + ADDRESS] = current_address;
+	}
+	else
+	{
+		// L1 WRITE MISS
+		L1_accesses++;
+		L2_accesses++;
+		bool found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2)
+		{
+			// L2 WRITE HIT
+			flag_write_L2 = true;
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
+			L2_hits++;
+			Update_LRU(set_L2, L2_cache);
+			Insert(tag_L1, set_L1, L1_cache);
+			flag_write_L2 = false;
+		}
+		else
+		{
+			// L2 WRITE MISS
+			Memory_Total_Access++;
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
+			Calculate_Set_Tag(current_address);
+			flag_write_mem = true;
+			Insert(current_tag_L2, current_set_L2, L2_cache);
+			Insert(current_tag_L1, current_set_L1, L1_cache);
+			flag_write_mem = false;
+		}
+	}
+}
+
+void Write_No_Allocate()
+{
+	Total_Accesses++;
+	bool found_1 = Search(tag_L1, set_L1, L1_cache);
+	int found_1_int = (found_1) ? 1 : 0;
+
+	if (found_1_int)
+	{
+		// L1 WRITE HIT
+		L1_accesses++;
+		L1_hits++;
+		Total_Access_Time += L1.num_of_cycles;
+		Update_LRU(set_L1, L1_cache);
+		L1.cache[set_L1][location_found_1 + DIRTY] = 1;
+	}
+	// didn't find in L1, WRITE MISS, go to serach in L2
+	else
+	{
+		// L1 WRITE MISS
+		L1_accesses++;
+		L2_accesses++;
+		bool found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2)
+		{
+			// L2 WRITE HIT
+			L2_hits++;
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
+			Update_LRU(set_L2, L2_cache); // update on the block we want to insert in L1
+			L2.cache[set_L2][location_found_2 + DIRTY] = 1;
+			// Insert_1(tag_1, set_1);//not sure were supposed to insert in L1 needs checking
+		}
+		else
+		{
+			// L2 WRITE MISS
+			Memory_Total_Access++;
+			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
+		}
+	}
 }
 
 void Calculate_Set_Tag(unsigned long int address)
@@ -279,7 +413,7 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 	return 0;
 }
 
-void UPDATE_LRU(unsigned set, cache_type type)
+void Update_LRU(unsigned set, cache_type type)
 {
 	bool found = false;
 	switch (type)
@@ -344,7 +478,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 			L1.cache[set][i + DIRTY] = 0;
 			L1.cache[set][i + ADDRESS] = current_address;
 			location_found_1 = i;
-			UPDATE_LRU(set, L1_cache);
+			Update_LRU(set, L1_cache);
 			if (flag_write_mem || flag_write_L2)
 			{
 				L1.cache[set][i + DIRTY] = 1;
@@ -361,7 +495,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 				L1.cache[set][L1.least_used[set] + VALID] = 1;
 				L1.cache[set][L1.least_used[set] + ADDRESS] = current_address;
 				location_found_1 = L1.least_used[set];
-				UPDATE_LRU(set, L1_cache);
+				Update_LRU(set, L1_cache);
 				if (flag_write_mem || flag_write_L2)
 				{
 					L1.cache[set][L1.least_used[set] + DIRTY] = 1;
@@ -372,14 +506,14 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 				if (Search(current_tag_L2, current_set_L2, L2_cache))
 				{
 					// loc_found_2 = cache->Least_used_2[addresses->current_set_2];
-					UPDATE_LRU(current_set_L2, L2_cache); // needs to update in L2 the block which is being evictes in L1
+					Update_LRU(current_set_L2, L2_cache); // needs to update in L2 the block which is being evictes in L1
 					// eviction and saving
 					L1.cache[set][L1.least_used[set] + VALID] = 1;
 					L1.cache[set][L1.least_used[set] + TAG] = tag;
 					L1.cache[set][L1.least_used[set] + ADDRESS] = current_address;
 					L1.cache[set][L1.least_used[set] + DIRTY] = 0;
 					location_found_1 = L1.least_used[current_set_L1];
-					UPDATE_LRU(set, L1_cache);
+					Update_LRU(set, L1_cache);
 					if (flag_write_mem || flag_write_L2)
 					{
 						L1.cache[set][L1.least_used[set] + DIRTY] = 1;
@@ -411,14 +545,14 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 		L2.cache[set][i + DIRTY] = 0;
 		L2.cache[set][i + ADDRESS] = current_address;
 		location_found_2 = i;
-		UPDATE_LRU(set, L2_cache);
+		Update_LRU(set, L2_cache);
 	}
 	else
 	{
 		if (L2.cache[set][L2.least_used[set] + DIRTY])
 		{
-			memory_total_Access++;
-			Total_Access_time += Memory_Cycles;
+			Memory_Total_Access++;
+			Total_Access_Time += Memory_Cycles;
 		}
 		L2.cache[set][L2.least_used[set] + TAG] = tag;
 		L2.cache[set][L2.least_used[set] + DIRTY] = 0;
@@ -428,7 +562,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 		unsigned long int set_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size));
 		unsigned long int tag_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size) + (unsigned long int)log2((L1.set_size))));
 		location_found_2 = L2.least_used[set];
-		UPDATE_LRU(set, L2_cache);
+		Update_LRU(set, L2_cache);
 		if (Search(tag_evicted_1, set_evicted_1, L1_cache))
 		{
 			L2.cache[set_evicted_1][location_found_1 + VALID] = 0;
