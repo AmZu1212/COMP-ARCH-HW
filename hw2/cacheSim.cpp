@@ -39,6 +39,32 @@ enum cache_type
 	L2_cache
 };
 
+struct Cache
+{
+	unsigned **cache;
+	unsigned *least_used;
+	unsigned size;
+	unsigned num_of_cycles;
+	unsigned num_blocks;
+	unsigned num_lines;
+	unsigned assoc;
+	unsigned set_size;
+	unsigned num_ways;
+};
+
+//===================================================================
+
+void Insert(unsigned long int tag, unsigned long int set, cache_type type);
+void Update_LRU(unsigned set, cache_type type);
+int Search(unsigned long int tag, unsigned long int set, cache_type type);
+void Calculate_Set_Tag(unsigned long int address);
+void Write_No_Allocate();
+void Write_Allocate();
+void Cache_Write();
+void Cache_Read();
+void Cache_Feed(char operation);
+void init_Caches(Cache L, unsigned size, unsigned num_of_cycles, unsigned assoc);
+
 /* Statistics Variables */
 //
 double L1_hits = 0;
@@ -75,20 +101,8 @@ unsigned long int current_set_L2;
 
 unsigned Block_Size;
 unsigned Memory_Cycles;
-unsigned Write_Allocate;
+unsigned Write_Alloc;
 
-struct Cache
-{
-	unsigned **cache;
-	unsigned *least_used;
-	unsigned size;
-	unsigned num_of_cycles;
-	unsigned num_blocks;
-	unsigned num_lines;
-	unsigned associativity;
-	unsigned set_size;
-	unsigned num_ways;
-};
 
 struct Cache L1;
 struct Cache L2;
@@ -170,11 +184,11 @@ int main(int argc, char **argv)
 	// CACHE INITIALIZER LINE <-----------------------------------------------------------------------
 	Block_Size = BSize;
 	Memory_Cycles = MemCyc;
-	Write_Allocate = WrAlloc;
+	Write_Alloc = WrAlloc;
 	
 
-	init_Caches(L1Size, L1Cyc, L1Assoc);
-	init_Caches(L2Size, L2Cyc, L2Assoc);
+	init_Caches(L1 ,L1Size, L1Cyc, L1Assoc);
+	init_Caches(L2, L2Size, L2Cyc, L2Assoc);
 
 
 	while (getline(file, line))
@@ -223,67 +237,55 @@ int main(int argc, char **argv)
 }
 
 
-struct Cache
-{
-	unsigned **cache;
-	unsigned *least_used;
-	unsigned size;
-	unsigned num_of_cycles;
-	unsigned num_blocks;
-	unsigned num_lines;
-	unsigned associativity;
-	unsigned set_size;
-	unsigned num_ways;
-};
 
 void init_Caches(Cache L, unsigned size, unsigned num_of_cycles, unsigned assoc)
 {
-	cache->L1Size = size;	  // bits
-	cache->L1Assoc = assoc; // bits
-	cache->L1Cyc = num_of_cycles;
-	cache->num_ways_1 = pow(2, assoc);								// num
-	cache->num_blocks_1 = (unsigned)(pow(2, size)) / (pow(2, Block_Size)); // num
-	cache->set_size_1 = (cache->num_blocks_1 / cache->num_ways_1);		// bits
-	cache->num_lines_1 = cache->set_size_1;
-	cache->Cache_L1 = (unsigned **)malloc(sizeof(unsigned *) * cache->num_lines_1);
+	L.size = size;	  // bits
+	L.assoc = assoc; // bits
+	L.num_of_cycles = num_of_cycles;
+	L.num_ways = pow(2, assoc);								// num
+	L.num_blocks = (unsigned)(pow(2, size)) / (pow(2, Block_Size)); // num
+	L.set_size = (L.num_blocks / L.num_ways);		// bits
+	L.num_lines = L.set_size;
+	L.cache = (unsigned **)malloc(sizeof(unsigned *) * L.num_lines);
 
-	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	for (unsigned i = 0; i < L.num_lines; i++)
 	{
-		cache->Cache_L1[i] = (unsigned *)malloc(sizeof(unsigned) * cache->num_ways_1 * NUM_COL);
+		L.cache[i] = (unsigned *)malloc(sizeof(unsigned) * L.num_ways * NUM_COL);
 	}
 
-	if (!cache->Cache_L1)
+	if (!L.cache)
 	{
-		free(cache->Cache_L1);
+		free(L.cache);
 		return;
 	}
 
-	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	for (unsigned i = 0; i < L.num_lines; i++)
 	{
-		for (unsigned j = 0; j < cache->num_ways_1 * NUM_COL; j++)
+		for (unsigned j = 0; j < L.num_ways * NUM_COL; j++)
 		{
-			cache->Cache_L1[i][j] = 0;
+			L.cache[i][j] = 0;
 		}
 	}
 
-	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	for (unsigned i = 0; i < L.num_lines; i++)
 	{
-		for (unsigned j = TAG; j < cache->num_ways_1 * NUM_COL; j += NUM_COL)
+		for (unsigned j = TAG; j < L.num_ways * NUM_COL; j += NUM_COL)
 		{
-			cache->Cache_L1[i][j] = MAX_VALUE;
+			L.cache[i][j] = MAX_VALUE;
 		}
 	}
 
 	/* initializing the least recently used tables */
-	cache->Least_used_1 = (unsigned *)malloc(sizeof(unsigned) * cache->num_lines_1);
-	if (!cache->Least_used_1)
+	L.least_used = (unsigned *)malloc(sizeof(unsigned) * L.num_lines);
+	if (!L.least_used)
 	{
-		free(cache->Least_used_1);
+		free(L.least_used);
 		return;
 	}
-	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	for (unsigned i = 0; i < L.num_lines; i++)
 	{
-		cache->Least_used_1[i] = 0;
+		L.least_used[i] = 0;
 	}
 }
 
@@ -340,7 +342,7 @@ void Cache_Read()
 
 void Cache_Write()
 {
-	if (Write_Allocate)
+	if (Write_Alloc)
 	{
 		Write_No_Allocate();
 	}
@@ -483,39 +485,42 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 void Update_LRU(unsigned set, cache_type type)
 {
 	bool found = false;
+	unsigned last_access;
 	switch (type)
 	{
-	case L1_cache:
-		unsigned last_access = L1.cache[set][location_found_1 + LRU];
-		L1.cache[set][location_found_1 + LRU] = L1.num_ways - 1; // last way to get accessed
-		for (unsigned i = LRU; i < L1.num_ways * NUM_COL; i += NUM_COL)
-		{ // updates i to each beginning of a new WAY
-			if ((i != location_found_1 + LRU) && (L1.cache[set][i] > last_access))
-			{
-				L1.cache[set][i]--;
+		case L1_cache:
+			last_access = L1.cache[set][location_found_1 + LRU];
+			L1.cache[set][location_found_1 + LRU] = L1.num_ways - 1; // last way to get accessed
+			for (unsigned i = LRU; i < L1.num_ways * NUM_COL; i += NUM_COL)
+			{ // updates i to each beginning of a new WAY
+				if ((i != location_found_1 + LRU) && (L1.cache[set][i] > last_access))
+				{
+					L1.cache[set][i]--;
+				}
+				if (L1.cache[set][i] == 0 && !found)
+				{
+					L1.least_used[set] = i - LRU; //-LRU
+					found = true;
+				}
 			}
-			if (L1.cache[set][i] == 0 && !found)
-			{
-				L1.least_used[set] = i - LRU; //-LRU
-				found = true;
-			}
-		}
+			break;
 
-	case L2_cache:
-		unsigned last_access = L2.cache[set][location_found_2 + LRU];
-		L2.cache[set][location_found_2 + LRU] = L2.num_ways - 1; // last way to get accessed
-		for (unsigned i = LRU; i < L2.num_ways * NUM_COL; i += NUM_COL)
-		{ // updates i to each beginning of a new WAY
-			if ((i != location_found_2 + LRU) && (L2.cache[set][i] > last_access))
-			{
-				L2.cache[set][i]--;
+		case L2_cache:
+			last_access = L2.cache[set][location_found_2 + LRU];
+			L2.cache[set][location_found_2 + LRU] = L2.num_ways - 1; // last way to get accessed
+			for (unsigned i = LRU; i < L2.num_ways * NUM_COL; i += NUM_COL)
+			{ // updates i to each beginning of a new WAY
+				if ((i != location_found_2 + LRU) && (L2.cache[set][i] > last_access))
+				{
+					L2.cache[set][i]--;
+				}
+				if (L2.cache[set][i] == 0 && !found)
+				{
+					L2.least_used[set] = i - LRU; //-LRU
+					found = true;
+				}
 			}
-			if (L2.cache[set][i] == 0 && !found)
-			{
-				L2.least_used[set] = i - LRU; //-LRU
-				found = true;
-			}
-		}
+			break;
 	}
 }
 void Insert(unsigned long int tag, unsigned long int set, cache_type type)
