@@ -5,10 +5,10 @@
             "name": "C++ Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bp_main",
-            "args": ["modded_test14.trc"],
+            "program": "${workspaceFolder}/hw2/cacheSim",
+            "args": ["example1_trace --mem-cyc 100 --bsize 3 --wr-alloc 1 --l1-size 4 --l1-assoc 1 --l1-cyc 1 --l2-size 6 --l2-assoc 0 --l2-cyc 5"],
             "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/hw2",
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

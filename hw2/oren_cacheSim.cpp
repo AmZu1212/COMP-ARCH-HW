@@ -196,7 +196,9 @@ int main(int argc, char **argv) {
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 		tag_1 = (num >> ((unsigned long int)(cache->Block_size) + (unsigned long int)log2((cache->set_size_1))));
+		printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", cache->Block_size, cache->set_size_1);
 		set_1 = (num >> ((unsigned long int)(cache->Block_size))) % ((unsigned long int)(cache->set_size_1));
+
 		tag_2 = (num >> ((unsigned long int)(cache->Block_size) + (unsigned long int)log2(cache->set_size_2)));
 		set_2 = (num >> ((unsigned long int)(cache->Block_size))) % (unsigned long int)(cache->set_size_2);
 

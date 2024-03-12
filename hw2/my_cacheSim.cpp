@@ -15,7 +15,7 @@ using std::stringstream;
 // CHANGE THIS LATER VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 #define NUM_COL 5 // 0-valid bit, 1-dirty bit, 2-LRU, 3-tag, 4-address
 #define N_DIRTY 0
-#define DEBUG 0
+#define DEBUG 1
 #define MAX_VALUE 4294967295
 // ===============also change this vvv==============================
 enum write_protocol
@@ -63,7 +63,7 @@ void Write_Allocate();
 void Cache_Write();
 void Cache_Read();
 void Cache_Feed(char operation);
-void init_Caches(Cache L, unsigned size, unsigned num_of_cycles, unsigned assoc);
+void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc);
 
 /* Statistics Variables */
 //
@@ -109,7 +109,7 @@ struct Cache L2;
 
 int main(int argc, char **argv)
 {
-
+	if(DEBUG) printf("entered main\n");
 	// QUICK ARG CHECK
 	if (argc < 19)
 	{
@@ -180,20 +180,21 @@ int main(int argc, char **argv)
 			return 0;
 		}
 	}
-
+	if(DEBUG) printf("passed the arg grabs\n");
 	// CACHE INITIALIZER LINE <-----------------------------------------------------------------------
 	Block_Size = BSize;
 	Memory_Cycles = MemCyc;
 	Write_Alloc = WrAlloc;
 	
 
-	init_Caches(L1 ,L1Size, L1Cyc, L1Assoc);
-	init_Caches(L2, L2Size, L2Cyc, L2Assoc);
-
-
+	init_Caches(&L1 ,L1Size, L1Cyc, L1Assoc);
+	init_Caches(&L2, L2Size, L2Cyc, L2Assoc);
+	if(DEBUG) printf("done with cache inits\n");
+	printf("L1 set_size is %d.\n", L1.set_size);
+	printf("L2 set_size is %d.\n", L2.set_size);
 	while (getline(file, line))
 	{
-
+		if(DEBUG) printf("entered while\n");
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
@@ -206,16 +207,21 @@ int main(int argc, char **argv)
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
-
+		if(DEBUG) printf("done with num check\n");
 		// ========================== TAG CALCS???
 		tag_L1 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L1.set_size)));
-		set_L1 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L1.set_size);
+		if(DEBUG) printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", Block_Size, L1.set_size);
+		set_L1 = (num >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size)); // set size is 0 for some reason
+		if(DEBUG) printf("2\n");
 		tag_L2 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L2.set_size)));
+		if(DEBUG) printf("3\n");
 		set_L2 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L2.set_size);
-
+		if(DEBUG) printf("4\n");
+		if(DEBUG) printf("before calc tags\n");
 		current_address = num;
 		Calculate_Set_Tag(num);
 		//==========================================
+		if(DEBUG) printf("after calc tags\n");
 		Cache_Feed(operation);
 	}
 
@@ -238,59 +244,65 @@ int main(int argc, char **argv)
 
 
 
-void init_Caches(Cache L, unsigned size, unsigned num_of_cycles, unsigned assoc)
+void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc)
 {
-	L.size = size;	  // bits
-	L.assoc = assoc; // bits
-	L.num_of_cycles = num_of_cycles;
-	L.num_ways = pow(2, assoc);								// num
-	L.num_blocks = (unsigned)(pow(2, size)) / (pow(2, Block_Size)); // num
-	L.set_size = (L.num_blocks / L.num_ways);		// bits
-	L.num_lines = L.set_size;
-	L.cache = (unsigned **)malloc(sizeof(unsigned *) * L.num_lines);
-
-	for (unsigned i = 0; i < L.num_lines; i++)
+	if(DEBUG) printf("entered cache init\n");
+	printf("size is %d, cycles is: %d, assoc is: %d.\n", size, num_of_cycles, assoc);
+	L->size = size;	  // bits
+	L->assoc = assoc; // bits
+	L->num_of_cycles = num_of_cycles;
+	L->num_ways = pow(2, assoc);								// num
+	L->num_blocks = (unsigned)(pow(2, size)) / (pow(2, Block_Size)); // num
+	L->set_size = (L->num_blocks / L->num_ways);		// bits
+	L->num_lines = L->set_size;
+	L->cache = (unsigned **)malloc(sizeof(unsigned *) * L->num_lines);
+	printf("set_size is %d.\n", L->set_size);
+	for (unsigned i = 0; i < L->num_lines; i++)
 	{
-		L.cache[i] = (unsigned *)malloc(sizeof(unsigned) * L.num_ways * NUM_COL);
+		L->cache[i] = (unsigned *)malloc(sizeof(unsigned) * L->num_ways * NUM_COL);
 	}
 
-	if (!L.cache)
+	if (!L->cache)
 	{
-		free(L.cache);
+		free(L->cache);
 		return;
 	}
 
-	for (unsigned i = 0; i < L.num_lines; i++)
+	for (unsigned i = 0; i < L->num_lines; i++)
 	{
-		for (unsigned j = 0; j < L.num_ways * NUM_COL; j++)
+		for (unsigned j = 0; j < L->num_ways * NUM_COL; j++)
 		{
-			L.cache[i][j] = 0;
+			L->cache[i][j] = 0;
 		}
 	}
 
-	for (unsigned i = 0; i < L.num_lines; i++)
+	for (unsigned i = 0; i < L->num_lines; i++)
 	{
-		for (unsigned j = TAG; j < L.num_ways * NUM_COL; j += NUM_COL)
+		for (unsigned j = TAG; j < L->num_ways * NUM_COL; j += NUM_COL)
 		{
-			L.cache[i][j] = MAX_VALUE;
+			L->cache[i][j] = MAX_VALUE;
 		}
 	}
 
 	/* initializing the least recently used tables */
-	L.least_used = (unsigned *)malloc(sizeof(unsigned) * L.num_lines);
-	if (!L.least_used)
+	L->least_used = (unsigned *)malloc(sizeof(unsigned) * L->num_lines);
+	if (!L->least_used)
 	{
-		free(L.least_used);
+		free(L->least_used);
 		return;
 	}
-	for (unsigned i = 0; i < L.num_lines; i++)
+	for (unsigned i = 0; i < L->num_lines; i++)
 	{
-		L.least_used[i] = 0;
+		L->least_used[i] = 0;
 	}
+	if(DEBUG) printf("left cache init\n");
+	printf("size is %d, cycles is: %d, assoc is: %d.\n", L->size, L->num_of_cycles, L->assoc);
+	printf("set_size is %d.\n", L->set_size);
 }
 
 void Cache_Feed(char operation)
 {
+	if(DEBUG) printf("entered cache feed\n");
 	if (operation == 'r')
 	{
 		Cache_Read();
@@ -299,10 +311,12 @@ void Cache_Feed(char operation)
 	{
 		Cache_Write();
 	}
+	if(DEBUG) printf("left cache feed\n");
 }
 
 void Cache_Read()
 {
+	if(DEBUG) printf("entered cache read\n");
 	Total_Accesses++;
 	bool found_1 = Search(tag_L1, set_L1, L1_cache);
 	int found_1_int = (found_1) ? 1 : 0;
@@ -338,18 +352,23 @@ void Cache_Read()
 			Insert(current_tag_L1, current_set_L1, L1_cache);
 		}
 	}
+	if(DEBUG) printf("left cache read\n");
 }
 
 void Cache_Write()
 {
+	if(DEBUG) printf("entered cache write\n");
 	if (Write_Alloc)
 	{
+		if(DEBUG) printf("chose no allocate\n");
 		Write_No_Allocate();
 	}
 	else
 	{
+		if(DEBUG) printf("chose allocate\n");
 		Write_Allocate();
 	}
+	if(DEBUG) printf("left write\n");
 }
 
 void Write_Allocate()
