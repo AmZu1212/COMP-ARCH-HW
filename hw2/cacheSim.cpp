@@ -168,7 +168,14 @@ int main(int argc, char **argv)
 	}
 
 	// CACHE INITIALIZER LINE <-----------------------------------------------------------------------
-	init_Caches();
+	Block_Size = BSize;
+	Memory_Cycles = MemCyc;
+	Write_Allocate = WrAlloc;
+	
+
+	init_Caches(L1Size, L1Cyc, L1Assoc);
+	init_Caches(L2Size, L2Cyc, L2Assoc);
+
 
 	while (getline(file, line))
 	{
@@ -215,9 +222,69 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-void init_Caches()
+
+struct Cache
 {
-	
+	unsigned **cache;
+	unsigned *least_used;
+	unsigned size;
+	unsigned num_of_cycles;
+	unsigned num_blocks;
+	unsigned num_lines;
+	unsigned associativity;
+	unsigned set_size;
+	unsigned num_ways;
+};
+
+void init_Caches(Cache L, unsigned size, unsigned num_of_cycles, unsigned assoc)
+{
+	cache->L1Size = size;	  // bits
+	cache->L1Assoc = assoc; // bits
+	cache->L1Cyc = num_of_cycles;
+	cache->num_ways_1 = pow(2, assoc);								// num
+	cache->num_blocks_1 = (unsigned)(pow(2, size)) / (pow(2, Block_Size)); // num
+	cache->set_size_1 = (cache->num_blocks_1 / cache->num_ways_1);		// bits
+	cache->num_lines_1 = cache->set_size_1;
+	cache->Cache_L1 = (unsigned **)malloc(sizeof(unsigned *) * cache->num_lines_1);
+
+	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	{
+		cache->Cache_L1[i] = (unsigned *)malloc(sizeof(unsigned) * cache->num_ways_1 * NUM_COL);
+	}
+
+	if (!cache->Cache_L1)
+	{
+		free(cache->Cache_L1);
+		return;
+	}
+
+	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	{
+		for (unsigned j = 0; j < cache->num_ways_1 * NUM_COL; j++)
+		{
+			cache->Cache_L1[i][j] = 0;
+		}
+	}
+
+	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	{
+		for (unsigned j = TAG; j < cache->num_ways_1 * NUM_COL; j += NUM_COL)
+		{
+			cache->Cache_L1[i][j] = MAX_VALUE;
+		}
+	}
+
+	/* initializing the least recently used tables */
+	cache->Least_used_1 = (unsigned *)malloc(sizeof(unsigned) * cache->num_lines_1);
+	if (!cache->Least_used_1)
+	{
+		free(cache->Least_used_1);
+		return;
+	}
+	for (unsigned i = 0; i < cache->num_lines_1; i++)
+	{
+		cache->Least_used_1[i] = 0;
+	}
 }
 
 void Cache_Feed(char operation)
