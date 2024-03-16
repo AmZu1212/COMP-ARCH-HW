@@ -1,3 +1,8 @@
+cache L1 set:0 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 ===================== reading line 1 ==================
 entered cache read
 L1 SEARCH
@@ -8,13 +13,72 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 0  LRU 1  tag 0  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 0  tag 0  address 0  
+cache L2 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:2 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 2 ==================
 entered cache write
 chose allocate
 L1 SEARCH
+write search result is: 1
 L1 WRITE HIT(ALLOC)
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 1  tag 0  address 4  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 0  tag 0  address 0  
+cache L2 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:2 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left write
 ===================== reading line 3 ==================
 entered cache read
@@ -27,13 +91,72 @@ L2 UPDATE
 L1 SEARCH
 L1 INSERT
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 4  
+valid 1  dirty 0  LRU 1  tag 131072  address 1048576  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:2 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 4 ==================
 entered cache write
 chose allocate
 L1 SEARCH
+write search result is: 1
 L1 WRITE HIT(ALLOC)
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 1  tag 0  address 0  
+valid 1  dirty 0  LRU 0  tag 131072  address 1048576  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:2 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left write
 ===================== reading line 5 ==================
 entered cache read
@@ -45,6 +168,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 6 ==================
 entered cache read
@@ -56,6 +208,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 7 ==================
 entered cache read
@@ -67,6 +248,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 8 ==================
 entered cache read
@@ -78,6 +288,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 9 ==================
 entered cache read
@@ -89,6 +328,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 10 ==================
 entered cache read
@@ -100,6 +368,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 48  
+cache L2 set:7 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
 left cache read
 ===================== reading line 11 ==================
 entered cache read
@@ -111,6 +408,35 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 48  
+cache L2 set:7 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 60  
+
 left cache read
 ===================== reading line 12 ==================
 entered cache read
@@ -122,22 +448,111 @@ L2 INSERT
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 0  tag 1  address 64  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 48  
+cache L2 set:7 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 60  
+
 left cache read
 ===================== reading line 13 ==================
 entered cache read
 L1 SEARCH
 L1 READ HIT
 L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 0  tag 1  address 64  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 48  
+cache L2 set:7 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 60  
+
 left cache read
 ===================== reading line 14 ==================
 entered cache write
 chose allocate
 L1 SEARCH
+write search result is: 0
 L1 WRITE MISS(ALLOC)
 L2 SEARCH
 L2 WRITE HIT(ALLOC)
 L2 UPDATE
 L1 INSERT
 L2 SEARCH
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 1  address 12  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 0  tag 1  address 64  
+cache L2 set:1 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 12  
+cache L2 set:2 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 16  
+cache L2 set:3 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 28  
+cache L2 set:4 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 32  
+cache L2 set:5 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 44  
+cache L2 set:6 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 48  
+cache L2 set:7 info is- 
+
+valid 1  dirty 0  LRU 0  tag 0  address 60  
+
 left write
 L1miss=0.786 L2miss=0.909 AccTimeAvg=76.357
+sanity check 88

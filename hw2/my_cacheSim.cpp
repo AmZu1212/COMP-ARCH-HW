@@ -64,7 +64,8 @@ void Cache_Write();
 void Cache_Read();
 void Cache_Feed(char operation);
 void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc);
-
+void Print_L1();
+void Print_L2();
 /* Statistics Variables */
 //
 double L1_hits = 0;
@@ -103,7 +104,7 @@ unsigned Block_Size;
 unsigned Memory_Cycles;
 unsigned Write_Alloc;
 
-
+int switcher = 0;
 struct Cache L1;
 struct Cache L2;
 
@@ -241,6 +242,7 @@ int main(int argc, char **argv)
 	free(L2.least_used);
 	free(L1.cache);
 	free(L2.cache);
+	if(DEBUG)printf("sanity check 88\n");
 	return 0;
 }
 
@@ -269,23 +271,43 @@ void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc
 		free(L->cache);
 		return;
 	}
-
-	for (unsigned i = 0; i < L->num_lines; i++)
+	if(switcher)
 	{
-		for (unsigned j = 0; j < L->num_ways * NUM_COL; j++)
+		for (unsigned i = 0; i < L->num_lines; i++)
 		{
-			L->cache[i][j] = 0;
+			for (unsigned j = 0; j < L->num_ways * NUM_COL; j++) //<=============================== should be different for l1 and l2
+			{
+				L->cache[i][j] = 0;
+			}
+		}
+
+		for (unsigned i = 0; i < L->num_lines; i++)
+		{
+			for (unsigned j = TAG; j < L->num_ways * NUM_COL; j += NUM_COL)
+			{
+				L->cache[i][j] = MAX_VALUE;
+			}
 		}
 	}
-
-	for (unsigned i = 0; i < L->num_lines; i++)
+	else
 	{
-		for (unsigned j = TAG; j < L->num_ways * NUM_COL; j += NUM_COL)
+		for (unsigned i = 0; i < L->num_lines; i++)
 		{
-			L->cache[i][j] = MAX_VALUE;
+			for (unsigned j = 0; j < L->num_ways * 2; j++) //<=============================== should be different for l1 and l2
+			{
+				L->cache[i][j] = 0;
+			}
 		}
-	}
 
+		for (unsigned i = 0; i < L->num_lines; i++)
+		{
+			for (unsigned j = TAG; j < L->num_ways * NUM_COL; j += NUM_COL)
+			{
+				L->cache[i][j] = MAX_VALUE;
+			}
+		}
+
+	}
 	/* initializing the least recently used tables */
 	L->least_used = (unsigned *)malloc(sizeof(unsigned) * L->num_lines);
 	if (!L->least_used)
@@ -300,6 +322,9 @@ void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc
 	//if(DEBUG) printf("left cache init\n");
 	//printf("size is %d, cycles is: %d, assoc is: %d.\n", L->size, L->num_of_cycles, L->assoc);
 	//printf("set_size is %d.\n", L->set_size);
+	
+	if(DEBUG && !switcher) Print_L1();
+	switcher++;
 }
 
 void Cache_Feed(char operation)
@@ -357,6 +382,10 @@ void Cache_Read()
 			Insert(current_tag_L1, current_set_L1, L1_cache);
 		}
 	}
+	if(DEBUG){
+		Print_L1();
+		Print_L2();
+	} 
 	if(DEBUG) printf("left cache read\n");
 }
 
@@ -373,6 +402,12 @@ void Cache_Write()
 		if(DEBUG) printf("chose allocate\n");
 		Write_Allocate();
 	}
+
+	if(DEBUG){
+		Print_L1();
+		Print_L2();
+	}
+	
 	if(DEBUG) printf("left write\n");
 }
 
@@ -380,7 +415,7 @@ void Write_Allocate()
 {
 	Total_Accesses++;
 	int found_1 = Search(tag_L1, set_L1, L1_cache);
-
+	if(DEBUG) printf("write search result is: %d\n", found_1);
 	if (found_1 == 1)
 	{
 		if(DEBUG) printf("L1 WRITE HIT(ALLOC)\n");
@@ -495,6 +530,7 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 			// next way
 			way += NUM_COL;
 		}
+		return 0;
 		break;
 
 	case L2_cache:
@@ -510,6 +546,7 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 			// next way
 			way += NUM_COL;
 		}
+		return 0;
 		break;
 	}
 	return 0;
@@ -658,7 +695,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 			}
 			// L1_total_access++;
 		}
-		
+
 		if(found_empty){
 			L2.cache[set][i + VALID] = 1;
 			L2.cache[set][i + TAG] = tag;
@@ -694,4 +731,75 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 		}
 	}
 	
+}
+
+
+
+void Print_L1(){
+	unsigned j=0;
+	int count=5;
+	for(unsigned i =0; i<L1.num_lines;i++){
+		printf("cache L1 set:%d info is- \n", i);
+		for( j =0; j<(L1.num_ways*NUM_COL);j++){
+			if(count==5){
+				count = 0;
+				printf("\n");
+			}
+			switch(j%5){
+				case 0:
+					printf("valid ");
+					break;
+				case 1:
+					printf("dirty ");
+					break;
+				case 2:
+					printf("LRU ");
+					break;
+				case 3:
+					printf("tag ");
+					break;
+				case 4:
+					printf("address ");
+					break;
+			}
+			printf("%d  ", L1.cache[i][j]);
+			count++;
+		}
+		printf("\n");
+	}
+	printf("\n");
+}
+void Print_L2(){
+	unsigned j=0;
+	int count=0;
+	for(unsigned i =0; i<L2.num_lines;i++){
+		printf("cache L2 set:%d info is- \n", i);
+		for( j =0; j<(L2.num_ways*NUM_COL);j++){
+			if(count==5){
+				count = 0;
+				printf("\n");
+			}
+			switch(j%5){
+				case 0:
+					printf("valid ");
+					break;
+				case 1:
+					printf("dirty ");
+					break;
+				case 2:
+					printf("LRU ");
+					break;
+				case 3:
+					printf("tag ");
+					break;
+				case 4:
+					printf("address ");
+					break;
+			}
+			printf("%d  ", L2.cache[i][j]);
+			count++;
+		}
+		printf("\n");
+	}
+	printf("\n");
 }

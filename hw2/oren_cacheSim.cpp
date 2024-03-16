@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
 	free(cache->Least_used_2);
 	free(cache);
 	free(addresses);
-
+	if(DEBUG)printf("sanity check 1\n");
 	return 0;
 }
 /*
@@ -308,7 +308,7 @@ void Cache_init(unsigned MemCyc, unsigned BSize, unsigned L1Size, unsigned L2Siz
 					return ;
 				}
 				for(unsigned i=0;i<cache->num_lines_2;i++){
-					for(unsigned j=0;j<cache->num_ways_2*2;j++){
+					for(unsigned j=0;j<cache->num_ways_2*2 /*<-this should be 2*/;j++){
 						cache->Cache_L2[i][j]=0;
 					}
 				}
@@ -339,17 +339,26 @@ void Cache_init(unsigned MemCyc, unsigned BSize, unsigned L1Size, unsigned L2Siz
 				if(!addresses){
 					return;
 				}	
-				//if(DEBUG) Print_L1();		
+				if(DEBUG) Print_L1();		
 			}
 void Cache_Write(unsigned long int tag, unsigned long int set){
 	//searching the tag according to the set value in all 'ways'
 	if(DEBUG) printf("entered cache write\n");
+	if (cache->WrAlloc)
+	{
+		if (DEBUG)printf("chose allocate\n");
+	}
+	else
+	{
+		if (DEBUG)printf("chose no allocate\n");
+	}
+	
 	Total_Access++;
 	bool found_1=Search_1(tag, set);
 	int found_1_int= (found_1)? 1 : 0;
+	if(DEBUG) printf("write search result is: %d\n", found_1);
 	switch(cache->WrAlloc){
 		case ALLOC:
-			if(DEBUG) printf("chose allocate\n");
 			switch(found_1_int)
 			{
 				//found in L1, WRITE HIT
@@ -395,7 +404,6 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 			}
 			break;
 		case N_ALLOC:
-			if(DEBUG) printf("chose no allocate\n");
 			switch(found_1_int)
 			{
 				//found in L1, WRITE HIT
@@ -431,8 +439,8 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 			break;
 	}
 	if(DEBUG){
-		//Print_L1();
-		//Print_L2();
+		Print_L1();
+		Print_L2();
 	} 	
 	if(DEBUG) printf("left write\n");
 }
@@ -480,8 +488,8 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 			break;
 	}
 	if(DEBUG){
-		//Print_L1();
-		//Print_L2();
+		Print_L1();
+		Print_L2();
 	} 
 	if(DEBUG) printf("left cache read\n");
 }
@@ -489,46 +497,32 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 
 //===============================================================================
 bool Search_1(unsigned long int tag, unsigned long int set){
-	//if(DEBUG) Print_L1();
-	//searching the tag according to the set value in all 'ways'
 	unsigned way=0;
-	//L1_total_access++;
 	if(DEBUG) printf("L1 SEARCH\n");
 	while(way<(cache->num_ways_1)*NUM_COL){
-		//found in current way
 		if(cache->Cache_L1[set][way+TAG] == tag && cache->Cache_L1[set][way+VALID]){
 			loc_found_1 = way;
-			//L1_total_hit++;
 			return true;
 		}
-		//next way
-		//L1_total_miss++;
 		way+=NUM_COL;
 	}
 	return false;
 }
 bool Search_2(unsigned long int tag, unsigned long int set){
-
-	//searching the tag according to the set value in all 'ways'
 	unsigned way=0;
-	//L2_total_access++;
 	if(DEBUG) printf("L2 SEARCH\n");
 	while(way<(cache->num_ways_2)*NUM_COL){
-		//found in current way
 		if(cache->Cache_L2[set][way+TAG] == tag && cache->Cache_L2[set][way+VALID]){
 			loc_found_2 = way;
-			//L2_total_hit++;
 			return true;
 		}
-		//next way
-		//L2_total_miss++;
 		way+=NUM_COL;
 	}
 	return false;
 }
 //===============================================================================
 void Insert_1(unsigned long int tag, unsigned long int set){
-	if(DEBUG) printf("entered insert (for cache 1)\n");
+	//if(DEBUG) printf("entered insert (for cache 1)\n");
 	unsigned i=0;
 	bool found_empty = false;
 	//looking for non valid bit in specific set
