@@ -192,9 +192,10 @@ int main(int argc, char **argv)
 	if(DEBUG) printf("done with cache inits\n");
 	printf("L1 set_size is %d.\n", L1.set_size);
 	printf("L2 set_size is %d.\n", L2.set_size);
+	int k = 1;
 	while (getline(file, line))
 	{
-		if(DEBUG) printf("entered while\n");
+		if(DEBUG) printf("reading line %d\n", k);
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
@@ -207,22 +208,23 @@ int main(int argc, char **argv)
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
-		if(DEBUG) printf("done with num check\n");
+	//	if(DEBUG) printf("done with num check\n");
 		// ========================== TAG CALCS???
 		tag_L1 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L1.set_size)));
-		if(DEBUG) printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", Block_Size, L1.set_size);
+		//if(DEBUG) printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", Block_Size, L1.set_size);
 		set_L1 = (num >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size)); // set size is 0 for some reason
-		if(DEBUG) printf("2\n");
+	//	if(DEBUG) printf("2\n");
 		tag_L2 = (num >> ((unsigned long int)(Block_Size) + (unsigned long int)log2(L2.set_size)));
-		if(DEBUG) printf("3\n");
+		//if(DEBUG) printf("3\n");
 		set_L2 = (num >> (unsigned long int)(Block_Size)) % (unsigned long int)(L2.set_size);
-		if(DEBUG) printf("4\n");
-		if(DEBUG) printf("before calc tags\n");
+		//if(DEBUG) printf("4\n");
+		//if(DEBUG) printf("before calc tags\n");
 		current_address = num;
 		Calculate_Set_Tag(num);
 		//==========================================
-		if(DEBUG) printf("after calc tags\n");
+		//if(DEBUG) printf("after calc tags\n");
 		Cache_Feed(operation);
+		k++;
 	}
 
 	// statistics calculations:
@@ -318,10 +320,10 @@ void Cache_Read()
 {
 	if(DEBUG) printf("entered cache read\n");
 	Total_Accesses++;
-	bool found_1 = Search(tag_L1, set_L1, L1_cache);
-	int found_1_int = (found_1) ? 1 : 0;
-	if (found_1_int)
+	int found_1 = Search(tag_L1, set_L1, L1_cache);
+	if (found_1 == 1)
 	{
+		if(DEBUG) printf("L1 READ HIT\n");
 		// L1 READ HIT
 		L1_accesses++;
 		L1_hits++;
@@ -330,12 +332,14 @@ void Cache_Read()
 	}
 	else
 	{
+		if(DEBUG) printf("L1 READ MISS\n");
 		// L1 READ MISS
 		L1_accesses++;
 		L2_accesses++;
-		bool found_2 = Search(tag_L2, set_L2, L2_cache);
-		if (found_2)
+		int found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2 == 2)
 		{
+			if(DEBUG) printf("L2 READ HIT\n");
 			// L2 READ HIT
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
 			L2_hits++;
@@ -344,6 +348,7 @@ void Cache_Read()
 		}
 		else
 		{
+			if(DEBUG) printf("L2 READ MISS\n");
 			// L2 READ MISS
 			Memory_Total_Access++;
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
@@ -374,11 +379,11 @@ void Cache_Write()
 void Write_Allocate()
 {
 	Total_Accesses++;
-	bool found_1 = Search(tag_L1, set_L1, L1_cache);
-	int found_1_int = (found_1) ? 1 : 0;
+	int found_1 = Search(tag_L1, set_L1, L1_cache);
 
-	if (found_1_int)
+	if (found_1 == 1)
 	{
+		if(DEBUG) printf("L1 WRITE HIT(ALLOC)\n");
 		// L1 WRITE HIT
 		L1_accesses++;
 		L1_hits++;
@@ -389,12 +394,14 @@ void Write_Allocate()
 	}
 	else
 	{
+		if(DEBUG) printf("L1 WRITE MISS(ALLOC)\n");
 		// L1 WRITE MISS
 		L1_accesses++;
 		L2_accesses++;
-		bool found_2 = Search(tag_L2, set_L2, L2_cache);
-		if (found_2)
+		int found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2 == 2)
 		{
+			if(DEBUG) printf("L2 WRITE HIT(ALLOC)\n");
 			// L2 WRITE HIT
 			flag_write_L2 = true;
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
@@ -405,6 +412,7 @@ void Write_Allocate()
 		}
 		else
 		{
+			if(DEBUG) printf("L2 WRITE MISS(ALLOC)\n");
 			// L2 WRITE MISS
 			Memory_Total_Access++;
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
@@ -420,11 +428,11 @@ void Write_Allocate()
 void Write_No_Allocate()
 {
 	Total_Accesses++;
-	bool found_1 = Search(tag_L1, set_L1, L1_cache);
-	int found_1_int = (found_1) ? 1 : 0;
+	int found_1 = Search(tag_L1, set_L1, L1_cache);
 
-	if (found_1_int)
+	if (found_1 == 1)
 	{
+		if(DEBUG) printf("L1 WRITE HIT(NO ALLOC)\n");
 		// L1 WRITE HIT
 		L1_accesses++;
 		L1_hits++;
@@ -435,12 +443,14 @@ void Write_No_Allocate()
 	// didn't find in L1, WRITE MISS, go to serach in L2
 	else
 	{
+		if(DEBUG) printf("L1 WRITE MISS(NO ALLOC)\n");
 		// L1 WRITE MISS
 		L1_accesses++;
 		L2_accesses++;
-		bool found_2 = Search(tag_L2, set_L2, L2_cache);
-		if (found_2)
+		int found_2 = Search(tag_L2, set_L2, L2_cache);
+		if (found_2 == 2)
 		{
+			if(DEBUG) printf("L2 WRITE HIT(NO ALLOC)\n");
 			// L2 WRITE HIT
 			L2_hits++;
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles;
@@ -450,6 +460,7 @@ void Write_No_Allocate()
 		}
 		else
 		{
+			if(DEBUG) printf("L2 WRITE MISS(NO ALLOC)\n");
 			// L2 WRITE MISS
 			Memory_Total_Access++;
 			Total_Access_Time += L1.num_of_cycles + L2.num_of_cycles + Memory_Cycles;
@@ -472,6 +483,7 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 	switch (type)
 	{
 	case L1_cache:
+		if(DEBUG) printf("L1 SEARCH\n");
 		while (way < (L1.num_ways) * NUM_COL)
 		{
 			// found in current way
@@ -483,8 +495,10 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 			// next way
 			way += NUM_COL;
 		}
+		break;
 
 	case L2_cache:
+		if(DEBUG) printf("L2 SEARCH\n");
 		while (way < (L2.num_ways) * NUM_COL)
 		{
 			// found in current way
@@ -496,7 +510,9 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 			// next way
 			way += NUM_COL;
 		}
+		break;
 	}
+	
 
 	return 0;
 }
@@ -507,7 +523,9 @@ void Update_LRU(unsigned set, cache_type type)
 	unsigned last_access;
 	switch (type)
 	{
+		
 		case L1_cache:
+			if(DEBUG) printf("L1 UPDATE\n");
 			last_access = L1.cache[set][location_found_1 + LRU];
 			L1.cache[set][location_found_1 + LRU] = L1.num_ways - 1; // last way to get accessed
 			for (unsigned i = LRU; i < L1.num_ways * NUM_COL; i += NUM_COL)
@@ -525,6 +543,7 @@ void Update_LRU(unsigned set, cache_type type)
 			break;
 
 		case L2_cache:
+			if(DEBUG) printf("L2 SEARCH\n");
 			last_access = L2.cache[set][location_found_2 + LRU];
 			L2.cache[set][location_found_2 + LRU] = L2.num_ways - 1; // last way to get accessed
 			for (unsigned i = LRU; i < L2.num_ways * NUM_COL; i += NUM_COL)
@@ -549,6 +568,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 	// looking for non valid bit in specific set
 	if (type == L1_cache)
 	{
+		if(DEBUG) printf("L1 INSERT\n");
 		while (!found_empty && i < (L1.num_ways) * NUM_COL)
 		{
 			if (L1.cache[set][i + VALID] == 1)
@@ -594,7 +614,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 				break;
 			case DIRTY: // gonna be at L2 for sure, only needs to update L2 and insert tag to L1 in the right place+update_LRU1
 				Calculate_Set_Tag(L1.cache[set][L1.least_used[set] + ADDRESS]);
-				if (Search(current_tag_L2, current_set_L2, L2_cache))
+				if (Search(current_tag_L2, current_set_L2, L2_cache) == 2)
 				{
 					// loc_found_2 = cache->Least_used_2[addresses->current_set_2];
 					Update_LRU(current_set_L2, L2_cache); // needs to update in L2 the block which is being evictes in L1
@@ -619,6 +639,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 	}
 	if (type == L2_cache)
 	{
+		if(DEBUG) printf("L2 INSERT\n");
 		while (!found_empty && i < (L2.num_ways) * NUM_COL)
 		{
 			if (L2.cache[set][i + VALID] == 1)
@@ -654,7 +675,7 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 		unsigned long int tag_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size) + (unsigned long int)log2((L1.set_size))));
 		location_found_2 = L2.least_used[set];
 		Update_LRU(set, L2_cache);
-		if (Search(tag_evicted_1, set_evicted_1, L1_cache))
+		if (Search(tag_evicted_1, set_evicted_1, L1_cache) == 1)
 		{
 			L2.cache[set_evicted_1][location_found_1 + VALID] = 0;
 			L2.cache[set_evicted_1][location_found_1 + DIRTY] = 0;
