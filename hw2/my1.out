@@ -1,0 +1,165 @@
+===================== reading line 1 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L1 UPDATE
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 2 ==================
+entered cache write
+chose allocate
+L1 SEARCH
+L1 WRITE HIT(ALLOC)
+L1 UPDATE
+left write
+===================== reading line 3 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L1 UPDATE
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 4 ==================
+entered cache write
+chose allocate
+L1 SEARCH
+L1 WRITE HIT(ALLOC)
+L1 UPDATE
+left write
+===================== reading line 5 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L1 UPDATE
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 6 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 7 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 8 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 9 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 10 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 11 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 12 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left cache read
+===================== reading line 13 ==================
+entered cache read
+L1 SEARCH
+L1 READ HIT
+L1 UPDATE
+left cache read
+===================== reading line 14 ==================
+entered cache write
+chose allocate
+L1 SEARCH
+L1 WRITE MISS(ALLOC)
+L2 SEARCH
+L2 WRITE MISS(ALLOC)
+L2 INSERT
+L2 SEARCH
+L1 INSERT
+L2 SEARCH
+L2 SEARCH
+L1 SEARCH
+left write
+L1miss=0.786 L2miss=1.000 AccTimeAvg=83.500

@@ -1,4 +1,4 @@
-
+// THIS IS ORENS CACHE SIM
 /* 046267 Computer Architecture - Winter 20/21 - HW #2 */
 
 #include <cstdlib>
@@ -25,7 +25,7 @@ using std::stringstream;
 
 #define NUM_COL 5 // 0-valid bit, 1-dirty bit, 2-LRU, 3-tag, 4-address
 #define N_DIRTY 0
-#define DEBUG 0
+#define DEBUG 1
 #define MAX_VALUE 4294967295
 
 //enum Operation{READ = "R", WRITE = "W"};
@@ -173,8 +173,10 @@ int main(int argc, char **argv) {
 	Cache_init(MemCyc, BSize,L1Size  ,L2Size, L1Assoc,
 			L2Assoc, L1Cyc, L2Cyc, WrAlloc);
 	//========================================================================
+	int k = 1;
 	while (getline(file, line)) {
-
+		if(DEBUG) printf("===================== reading line %d ==================\n", k);
+		k++;
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
@@ -196,7 +198,7 @@ int main(int argc, char **argv) {
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 		tag_1 = (num >> ((unsigned long int)(cache->Block_size) + (unsigned long int)log2((cache->set_size_1))));
-		printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", cache->Block_size, cache->set_size_1);
+		//printf("1 -> Block_Size is: %d, L1.set_size is: %d.\n", cache->Block_size, cache->set_size_1);
 		set_1 = (num >> ((unsigned long int)(cache->Block_size))) % ((unsigned long int)(cache->set_size_1));
 
 		tag_2 = (num >> ((unsigned long int)(cache->Block_size) + (unsigned long int)log2(cache->set_size_2)));
@@ -341,16 +343,19 @@ void Cache_init(unsigned MemCyc, unsigned BSize, unsigned L1Size, unsigned L2Siz
 			}
 void Cache_Write(unsigned long int tag, unsigned long int set){
 	//searching the tag according to the set value in all 'ways'
+	if(DEBUG) printf("entered cache write\n");
 	Total_Access++;
 	bool found_1=Search_1(tag, set);
 	int found_1_int= (found_1)? 1 : 0;
 	switch(cache->WrAlloc){
 		case ALLOC:
+			if(DEBUG) printf("chose allocate\n");
 			switch(found_1_int)
 			{
 				//found in L1, WRITE HIT
 				case 1:
-					if(DEBUG) printf("L1 hit \n");
+					if(DEBUG) printf("L1 WRITE HIT(ALLOC)\n");
+					//if(DEBUG) printf("L1 hit \n");
 					L1_total_access++;
 					L1_total_hit++;
 					Total_Access_time+=cache->L1Cyc;
@@ -361,10 +366,12 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 					break;
 				//didn't find in L1, WRITE MISS, go to search in L2
 				case 0: 
+					if(DEBUG) printf("L1 WRITE MISS(ALLOC)\n");
 					L1_total_access++;
 					L2_total_access++;
 					bool found_2=Search_2(tag_2, set_2);
 					if(found_2){
+						if(DEBUG) printf("L2 WRITE HIT(ALLOC)\n");
 						flag_write_L2 = true;
 						Total_Access_time+=cache->L1Cyc + cache->L2Cyc;
 						L2_total_hit++;
@@ -376,6 +383,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 						flag_write_L2 = false;
 					}
 					else{
+						if(DEBUG) printf("L2 WRITE MISS(ALLOC)\n");
 						memory_total_Access++;
 						Total_Access_time+=cache->L2Cyc + cache->L1Cyc + cache->MemCyc;
 						Calculate_Set_Tag(addresses->current_address);
@@ -386,11 +394,13 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 					}
 			}
 			break;
-		case N_ALLOC:	
+		case N_ALLOC:
+			if(DEBUG) printf("chose no allocate\n");
 			switch(found_1_int)
 			{
 				//found in L1, WRITE HIT
 				case 1:
+					if(DEBUG) printf("L1 WRITE HIT(NO ALLOC)\n");
 					L1_total_access++;
 					L1_total_hit++;
 					Total_Access_time+=cache->L1Cyc;
@@ -400,10 +410,12 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 					break;
 				//didn't find in L1, WRITE MISS, go to serach in L2
 				case 0: 
+					if(DEBUG) printf("L1 WRITE MISS(NO ALLOC)\n");
 					L1_total_access++;
 					L2_total_access++;
 					bool found_2=Search_2(tag_2, set_2);
 					if(found_2){
+						if(DEBUG) printf("L2 WRITE HIT(NO ALLOC)\n");
 						L2_total_hit++;
 						Total_Access_time+=cache->L1Cyc+cache->L2Cyc;
 						UPDATE_LRU_2(set_2);//update on the block we want to insert in L1
@@ -411,6 +423,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 						//Insert_1(tag_1, set_1);//not sure were supposed to insert in L1 needs checking
 					}
 					else{
+						if(DEBUG) printf("L2 WRITE MISS(NO ALLOC)\n");
 						memory_total_Access++;
 						Total_Access_time+=cache->L1Cyc + cache->L2Cyc + cache->MemCyc;
 					}
@@ -418,11 +431,13 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 			break;
 	}
 	if(DEBUG){
-		Print_L1();
-		Print_L2();
+		//Print_L1();
+		//Print_L2();
 	} 	
+	if(DEBUG) printf("left write\n");
 }
 void Cache_Read(unsigned long int tag, unsigned long int set){
+	if(DEBUG) printf("entered cache read\n");
 	Total_Access++;
 	bool found_1=Search_1(tag, set);
 	int found_1_int= (found_1)? 1 : 0;
@@ -430,6 +445,7 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 	{
 		//found in L1, READ HIT
 		case 1:
+			if(DEBUG) printf("L1 READ HIT\n");
 			L1_total_access++;
 			L1_total_hit++;
 			Total_Access_time+=cache->L1Cyc;
@@ -438,16 +454,19 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 			break;
 		//didnt find in L1, READ MISS, go to serach in L2
 		case 0: 
+			if(DEBUG) printf("L1 READ MISS\n");
 			L1_total_access++;
 			L2_total_access++;
 			bool found_2=Search_2(tag_2, set_2);
 			if(found_2){
+				if(DEBUG) printf("L2 READ HIT\n");
 				Total_Access_time+=cache->L1Cyc+cache->L2Cyc;
 				L2_total_hit++;
 				UPDATE_LRU_2(set_2);//update on the block we want to insert in L1
 				Insert_1(tag_1, set_1);//not sure were supposed to insert in L1 needs checking
 			}
 			else{
+				if(DEBUG) printf("L2 READ MISS\n");
 				memory_total_Access++;
 				Total_Access_time+=cache->L1Cyc+cache->L2Cyc+cache->MemCyc;
 				Calculate_Set_Tag(addresses->current_address);
@@ -461,9 +480,10 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 			break;
 	}
 	if(DEBUG){
-		Print_L1();
-		Print_L2();
+		//Print_L1();
+		//Print_L2();
 	} 
+	if(DEBUG) printf("left cache read\n");
 }
 
 
@@ -473,6 +493,7 @@ bool Search_1(unsigned long int tag, unsigned long int set){
 	//searching the tag according to the set value in all 'ways'
 	unsigned way=0;
 	//L1_total_access++;
+	if(DEBUG) printf("L1 SEARCH\n");
 	while(way<(cache->num_ways_1)*NUM_COL){
 		//found in current way
 		if(cache->Cache_L1[set][way+TAG] == tag && cache->Cache_L1[set][way+VALID]){
@@ -491,6 +512,7 @@ bool Search_2(unsigned long int tag, unsigned long int set){
 	//searching the tag according to the set value in all 'ways'
 	unsigned way=0;
 	//L2_total_access++;
+	if(DEBUG) printf("L2 SEARCH\n");
 	while(way<(cache->num_ways_2)*NUM_COL){
 		//found in current way
 		if(cache->Cache_L2[set][way+TAG] == tag && cache->Cache_L2[set][way+VALID]){
@@ -509,13 +531,14 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 	unsigned i=0;
 	bool found_empty = false;
 	//looking for non valid bit in specific set
+	if(DEBUG) printf("L1 INSERT\n");
 	while(!found_empty && i<(cache->num_ways_1)*NUM_COL){
 		if(cache->Cache_L1[set][i+VALID]==1){
 			i+=NUM_COL;
 		}
 		else{
 			found_empty=true;
-			if(DEBUG) printf("check if you are here test 1009 \n");
+			//if(DEBUG) printf("check if you are here test 1009 \n");
 		}
 		//L1_total_access++;
 	}
@@ -527,14 +550,14 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 		cache->Cache_L1[set][i+ADDRESS]=addresses->current_address;
 		loc_found_1=i;
 		UPDATE_LRU_1(set);
-		if(DEBUG) printf("check if enters \n");
+		//if(DEBUG) printf("check if enters \n");
 		if(flag_write_mem || flag_write_L2){
 			cache->Cache_L1[set][i+DIRTY]=1;
 		}
 	}
 	//didn't find an available set, eviction needed
 	else{
-		if(DEBUG) printf("did u get inside here by any chance \n");
+		//if(DEBUG) printf("did u get inside here by any chance \n");
 		//DIRTY CHECK. checks if there's a need to copy from L1 to L2 before placing new INFO
 		//UPDATE_LRU_1(set);
 		switch(cache->Cache_L1[set][cache->Least_used_1[set]+DIRTY]){ 
@@ -579,6 +602,7 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 
 }
 void Insert_2(unsigned long int tag, unsigned long int set){
+	if(DEBUG) printf("L2 INSERT\n");
 	unsigned i=0;
 	bool found_empty = false;
 	//looking for non valid bit in specific set
@@ -627,15 +651,16 @@ void Insert_2(unsigned long int tag, unsigned long int set){
 
 //====================================================================================================================
 void UPDATE_LRU_1(unsigned set){
+	if(DEBUG) printf("L1 UPDATE\n");
 	bool found=false;
 	unsigned last_access = cache->Cache_L1[set][loc_found_1+LRU];
-	if(DEBUG) printf("last access %d \n",last_access);
+	//if(DEBUG) printf("last access %d \n",last_access);
 	cache->Cache_L1[set][loc_found_1+LRU] = cache->num_ways_1-1;//last way to get accessed
-	if(DEBUG) printf("LRU is %d \n", cache->Cache_L1[set][loc_found_1+LRU]);
+	//if(DEBUG) printf("LRU is %d \n", cache->Cache_L1[set][loc_found_1+LRU]);
 	for(unsigned i=LRU; i < cache->num_ways_1*NUM_COL; i+=NUM_COL){//updates i to each beginning of a new WAY
 		if((i!=loc_found_1+LRU) && (cache->Cache_L1[set][i] > last_access)){
 			cache->Cache_L1[set][i]--;
-			if(DEBUG) printf("your'e not supposed to be here \n");
+			//if(DEBUG) printf("your'e not supposed to be here \n");
 		}
 		if(cache->Cache_L1[set][i] == 0 && !found){
 			cache->Least_used_1[set]=i-LRU;//-LRU
@@ -644,6 +669,7 @@ void UPDATE_LRU_1(unsigned set){
 	}
 }
 void UPDATE_LRU_2(unsigned set){
+	if(DEBUG) printf("L2 SEARCH\n");
 	bool found=false;
 	unsigned last_access = cache->Cache_L2[set][loc_found_2+LRU];
 	cache->Cache_L2[set][loc_found_2+LRU] = cache->num_ways_2-1;

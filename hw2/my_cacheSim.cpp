@@ -109,7 +109,7 @@ struct Cache L2;
 
 int main(int argc, char **argv)
 {
-	if(DEBUG) printf("entered main\n");
+	//if(DEBUG) printf("entered main\n");
 	// QUICK ARG CHECK
 	if (argc < 19)
 	{
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 	}
-	if(DEBUG) printf("passed the arg grabs\n");
+	//if(DEBUG) printf("passed the arg grabs\n");
 	// CACHE INITIALIZER LINE <-----------------------------------------------------------------------
 	Block_Size = BSize;
 	Memory_Cycles = MemCyc;
@@ -189,13 +189,13 @@ int main(int argc, char **argv)
 
 	init_Caches(&L1 ,L1Size, L1Cyc, L1Assoc);
 	init_Caches(&L2, L2Size, L2Cyc, L2Assoc);
-	if(DEBUG) printf("done with cache inits\n");
-	printf("L1 set_size is %d.\n", L1.set_size);
-	printf("L2 set_size is %d.\n", L2.set_size);
+	//if(DEBUG) printf("done with cache inits\n");
+	//printf("L1 set_size is %d.\n", L1.set_size);
+	//printf("L2 set_size is %d.\n", L2.set_size);
 	int k = 1;
 	while (getline(file, line))
 	{
-		if(DEBUG) printf("reading line %d\n", k);
+		if(DEBUG) printf("===================== reading line %d ==================\n", k);
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
@@ -248,8 +248,8 @@ int main(int argc, char **argv)
 
 void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc)
 {
-	if(DEBUG) printf("entered cache init\n");
-	printf("size is %d, cycles is: %d, assoc is: %d.\n", size, num_of_cycles, assoc);
+	//if(DEBUG) printf("entered cache init\n");
+	//printf("size is %d, cycles is: %d, assoc is: %d.\n", size, num_of_cycles, assoc);
 	L->size = size;	  // bits
 	L->assoc = assoc; // bits
 	L->num_of_cycles = num_of_cycles;
@@ -258,7 +258,7 @@ void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc
 	L->set_size = (L->num_blocks / L->num_ways);		// bits
 	L->num_lines = L->set_size;
 	L->cache = (unsigned **)malloc(sizeof(unsigned *) * L->num_lines);
-	printf("set_size is %d.\n", L->set_size);
+	//printf("set_size is %d.\n", L->set_size);
 	for (unsigned i = 0; i < L->num_lines; i++)
 	{
 		L->cache[i] = (unsigned *)malloc(sizeof(unsigned) * L->num_ways * NUM_COL);
@@ -297,14 +297,14 @@ void init_Caches(Cache *L, unsigned size, unsigned num_of_cycles, unsigned assoc
 	{
 		L->least_used[i] = 0;
 	}
-	if(DEBUG) printf("left cache init\n");
-	printf("size is %d, cycles is: %d, assoc is: %d.\n", L->size, L->num_of_cycles, L->assoc);
-	printf("set_size is %d.\n", L->set_size);
+	//if(DEBUG) printf("left cache init\n");
+	//printf("size is %d, cycles is: %d, assoc is: %d.\n", L->size, L->num_of_cycles, L->assoc);
+	//printf("set_size is %d.\n", L->set_size);
 }
 
 void Cache_Feed(char operation)
 {
-	if(DEBUG) printf("entered cache feed\n");
+	//if(DEBUG) printf("entered cache feed\n");
 	if (operation == 'r')
 	{
 		Cache_Read();
@@ -313,7 +313,7 @@ void Cache_Feed(char operation)
 	{
 		Cache_Write();
 	}
-	if(DEBUG) printf("left cache feed\n");
+	//if(DEBUG) printf("left cache feed\n");
 }
 
 void Cache_Read()
@@ -363,7 +363,7 @@ void Cache_Read()
 void Cache_Write()
 {
 	if(DEBUG) printf("entered cache write\n");
-	if (Write_Alloc)
+	if (Write_Alloc == 0)
 	{
 		if(DEBUG) printf("chose no allocate\n");
 		Write_No_Allocate();
