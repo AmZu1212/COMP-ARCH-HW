@@ -1,0 +1,171 @@
+cache L1 set:0 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+===================== reading line 1 ==================
+entered cache write
+chose allocate
+L1 SEARCH
+write search result is: 0
+L1 WRITE MISS(ALLOC)
+L2 SEARCH
+L2 WRITE MISS(ALLOC)
+L2 INSERT
+L2 UPDATE
+L1 INSERT
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 1  tag 0  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 3  tag 0  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+left write
+===================== reading line 2 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 UPDATE
+L1 INSERT
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 1  LRU 0  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 8192  address 65536  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 2  tag 0  address 0  
+valid 1  dirty 0  LRU 3  tag 16384  address 65536  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+left cache read
+===================== reading line 3 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 UPDATE
+L1 INSERT
+L2 SEARCH
+L2 UPDATE
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 0  LRU 1  tag 16384  address 131072  
+valid 1  dirty 0  LRU 0  tag 8192  address 65536  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 3  tag 0  address 0  
+valid 1  dirty 0  LRU 1  tag 16384  address 65536  
+valid 1  dirty 0  LRU 2  tag 32768  address 131072  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+left cache read
+===================== reading line 4 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 UPDATE
+L1 INSERT
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 0  LRU 0  tag 16384  address 131072  
+valid 1  dirty 0  LRU 1  tag 24576  address 196608  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 2  tag 0  address 0  
+valid 1  dirty 0  LRU 0  tag 16384  address 65536  
+valid 1  dirty 0  LRU 1  tag 32768  address 131072  
+valid 1  dirty 0  LRU 3  tag 49152  address 196608  
+
+left cache read
+===================== reading line 5 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ MISS
+L2 INSERT
+L2 UPDATE
+L1 SEARCH
+L1 INSERT
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 0  LRU 1  tag 32768  address 262144  
+valid 1  dirty 0  LRU 0  tag 24576  address 196608  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 1  tag 0  address 0  
+valid 1  dirty 0  LRU 3  tag 65536  address 262144  
+valid 1  dirty 0  LRU 0  tag 32768  address 131072  
+valid 1  dirty 0  LRU 2  tag 49152  address 196608  
+
+left cache read
+===================== reading line 6 ==================
+entered cache read
+L1 SEARCH
+L1 READ MISS
+L2 SEARCH
+L2 READ HIT
+L2 UPDATE
+L1 INSERT
+L1 UPDATE
+cache L1 set:0 info is- 
+
+valid 1  dirty 0  LRU 0  tag 32768  address 262144  
+valid 1  dirty 0  LRU 1  tag 0  address 0  
+cache L1 set:1 info is- 
+
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+valid 0  dirty 0  LRU 0  tag -1  address 0  
+
+cache L2 set:0 info is- 
+valid 1  dirty 0  LRU 3  tag 0  address 0  
+valid 1  dirty 0  LRU 2  tag 65536  address 262144  
+valid 1  dirty 0  LRU 0  tag 32768  address 131072  
+valid 1  dirty 0  LRU 1  tag 49152  address 196608  
+
+left cache read
+L1miss=1.000 L2miss=0.833 AccTimeAvg=14.333
+sanity check 1
