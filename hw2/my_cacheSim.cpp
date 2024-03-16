@@ -512,8 +512,6 @@ int Search(unsigned long int tag, unsigned long int set, cache_type type)
 		}
 		break;
 	}
-	
-
 	return 0;
 }
 
@@ -540,10 +538,11 @@ void Update_LRU(unsigned set, cache_type type)
 					found = true;
 				}
 			}
+			return;
 			break;
 
 		case L2_cache:
-			if(DEBUG) printf("L2 SEARCH\n");
+			if(DEBUG) printf("L2 UPDATE\n");
 			last_access = L2.cache[set][location_found_2 + LRU];
 			L2.cache[set][location_found_2 + LRU] = L2.num_ways - 1; // last way to get accessed
 			for (unsigned i = LRU; i < L2.num_ways * NUM_COL; i += NUM_COL)
@@ -558,11 +557,13 @@ void Update_LRU(unsigned set, cache_type type)
 					found = true;
 				}
 			}
+			return;
 			break;
 	}
 }
 void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 {
+	//if(DEBUG) printf("entered insert\n");
 	unsigned i = 0;
 	bool found_empty = false;
 	// looking for non valid bit in specific set
@@ -589,7 +590,9 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 			L1.cache[set][i + DIRTY] = 0;
 			L1.cache[set][i + ADDRESS] = current_address;
 			location_found_1 = i;
+			//if(DEBUG) printf("calling update from insert for cache 1\n");
 			Update_LRU(set, L1_cache);
+			//if(DEBUG) printf("update returned (for cache 1)\n");
 			if (flag_write_mem || flag_write_L2)
 			{
 				L1.cache[set][i + DIRTY] = 1;
@@ -636,7 +639,10 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 				break;
 			}
 		}
+		return;
 	}
+
+
 	if (type == L2_cache)
 	{
 		if(DEBUG) printf("L2 INSERT\n");
@@ -652,36 +658,40 @@ void Insert(unsigned long int tag, unsigned long int set, cache_type type)
 			}
 			// L1_total_access++;
 		}
-		L2.cache[set][i + VALID] = 1;
-		L2.cache[set][i + TAG] = tag;
-		L2.cache[set][i + DIRTY] = 0;
-		L2.cache[set][i + ADDRESS] = current_address;
-		location_found_2 = i;
-		Update_LRU(set, L2_cache);
-	}
-	else
-	{
-		if (L2.cache[set][L2.least_used[set] + DIRTY])
-		{
-			Memory_Total_Access++;
-			Total_Access_Time += Memory_Cycles;
+		
+		if(found_empty){
+			L2.cache[set][i + VALID] = 1;
+			L2.cache[set][i + TAG] = tag;
+			L2.cache[set][i + DIRTY] = 0;
+			L2.cache[set][i + ADDRESS] = current_address;
+			location_found_2 = i;
+			Update_LRU(set, L2_cache);
 		}
-		L2.cache[set][L2.least_used[set] + TAG] = tag;
-		L2.cache[set][L2.least_used[set] + DIRTY] = 0;
-		L2.cache[set][L2.least_used[set] + VALID] = 1;
-		unsigned long int address_evicted = L2.cache[set][L2.least_used[set] + ADDRESS];
-		L2.cache[set][L2.least_used[set] + ADDRESS] = current_address;
-		unsigned long int set_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size));
-		unsigned long int tag_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size) + (unsigned long int)log2((L1.set_size))));
-		location_found_2 = L2.least_used[set];
-		Update_LRU(set, L2_cache);
-		if (Search(tag_evicted_1, set_evicted_1, L1_cache) == 1)
+		else
 		{
-			L2.cache[set_evicted_1][location_found_1 + VALID] = 0;
-			L2.cache[set_evicted_1][location_found_1 + DIRTY] = 0;
-			L2.cache[set_evicted_1][location_found_1 + TAG] = MAX_VALUE;
-			L2.cache[set_evicted_1][location_found_1 + ADDRESS] = 0;
-			L2.cache[set_evicted_1][location_found_1 + LRU] = 0;
+			if (L2.cache[set][L2.least_used[set] + DIRTY])
+			{
+				Memory_Total_Access++;
+				Total_Access_Time += Memory_Cycles;
+			}
+			L2.cache[set][L2.least_used[set] + TAG] = tag;
+			L2.cache[set][L2.least_used[set] + DIRTY] = 0;
+			L2.cache[set][L2.least_used[set] + VALID] = 1;
+			unsigned long int address_evicted = L2.cache[set][L2.least_used[set] + ADDRESS];
+			L2.cache[set][L2.least_used[set] + ADDRESS] = current_address;
+			unsigned long int set_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size));
+			unsigned long int tag_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size) + (unsigned long int)log2((L1.set_size))));
+			location_found_2 = L2.least_used[set];
+			Update_LRU(set, L2_cache);
+			if (Search(tag_evicted_1, set_evicted_1, L1_cache) == 1)
+			{
+				L2.cache[set_evicted_1][location_found_1 + VALID] = 0;
+				L2.cache[set_evicted_1][location_found_1 + DIRTY] = 0;
+				L2.cache[set_evicted_1][location_found_1 + TAG] = MAX_VALUE;
+				L2.cache[set_evicted_1][location_found_1 + ADDRESS] = 0;
+				L2.cache[set_evicted_1][location_found_1 + LRU] = 0;
+			}
 		}
 	}
+	
 }

@@ -5,11 +5,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L1 UPDATE
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 2 ==================
 entered cache write
@@ -25,11 +23,10 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
+L1 SEARCH
 L1 INSERT
 L1 UPDATE
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 4 ==================
 entered cache write
@@ -45,11 +42,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L1 UPDATE
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 6 ==================
 entered cache read
@@ -58,11 +53,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 7 ==================
 entered cache read
@@ -71,11 +64,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 8 ==================
 entered cache read
@@ -84,11 +75,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 9 ==================
 entered cache read
@@ -97,11 +86,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 10 ==================
 entered cache read
@@ -110,11 +97,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 11 ==================
 entered cache read
@@ -123,11 +108,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 12 ==================
 entered cache read
@@ -136,11 +119,9 @@ L1 READ MISS
 L2 SEARCH
 L2 READ MISS
 L2 INSERT
-L2 SEARCH
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left cache read
 ===================== reading line 13 ==================
 entered cache read
@@ -154,12 +135,9 @@ chose allocate
 L1 SEARCH
 L1 WRITE MISS(ALLOC)
 L2 SEARCH
-L2 WRITE MISS(ALLOC)
-L2 INSERT
-L2 SEARCH
+L2 WRITE HIT(ALLOC)
+L2 UPDATE
 L1 INSERT
 L2 SEARCH
-L2 SEARCH
-L1 SEARCH
 left write
-L1miss=0.786 L2miss=1.000 AccTimeAvg=83.500
+L1miss=0.786 L2miss=0.909 AccTimeAvg=76.357

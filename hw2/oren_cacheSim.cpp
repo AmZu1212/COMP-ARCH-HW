@@ -528,6 +528,7 @@ bool Search_2(unsigned long int tag, unsigned long int set){
 }
 //===============================================================================
 void Insert_1(unsigned long int tag, unsigned long int set){
+	if(DEBUG) printf("entered insert (for cache 1)\n");
 	unsigned i=0;
 	bool found_empty = false;
 	//looking for non valid bit in specific set
@@ -624,8 +625,8 @@ void Insert_2(unsigned long int tag, unsigned long int set){
 		loc_found_2=i;
 		UPDATE_LRU_2(set);
 	}
-	//didn't find available way in L2, making eviction and putting data
-	else{
+	else
+	{//didn't find available way in L2, making eviction and putting data
 		if(cache->Cache_L2[set][cache->Least_used_2[set]+DIRTY]){
 			memory_total_Access++;
 			Total_Access_time+=cache->MemCyc;
@@ -669,7 +670,7 @@ void UPDATE_LRU_1(unsigned set){
 	}
 }
 void UPDATE_LRU_2(unsigned set){
-	if(DEBUG) printf("L2 SEARCH\n");
+	if(DEBUG) printf("L2 UPDATE\n");
 	bool found=false;
 	unsigned last_access = cache->Cache_L2[set][loc_found_2+LRU];
 	cache->Cache_L2[set][loc_found_2+LRU] = cache->num_ways_2-1;
