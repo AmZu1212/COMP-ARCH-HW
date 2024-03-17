@@ -1,6 +1,6 @@
 Running Make clean
 rm -f *.o
-rm -f cacheSim oren_cacheSim
+rm -f cacheSim
 
 Running Make
 g++ -g -o cacheSim my_cacheSim.cpp
