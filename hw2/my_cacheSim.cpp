@@ -68,8 +68,8 @@ bool Search_combine(unsigned long int tag, unsigned long int set, Cache* cache_p
 void Calculate_Set_Tag(unsigned long int address);
 void Cache_Write();
 void Cache_Read();
-void Write_With_Allocate(int found);
-void Write_No_Allocate(int found);
+void Write_With_Allocate(bool found);
+void Write_No_Allocate(bool found);
 void L1_init(unsigned L1Size, unsigned L1Assoc, unsigned L1Cyc);
 void L2_init(unsigned L2Size, unsigned L2Assoc, unsigned L2Cyc);
 //void Print_L1();
@@ -268,10 +268,8 @@ void Cache_Read()
 	if (DEBUG) printf("entered cache read\n");
 	Total_Accesses++;
 	bool found_1 = Search_combine(tag_L1, set_L1, &L1); // Search_combine(tag_L1, set_L1, L1_cache);//Search_1(tag, set);
-	int found_1_int = (found_1) ? 1 : 0;
-	switch (found_1_int)
+	if (found_1)
 	{
-	case 1:
 		// L1 READ HIT
 		if (DEBUG) printf("L1 READ HIT\n");
 		L1_accesses++;
@@ -279,8 +277,9 @@ void Cache_Read()
 		Total_Access_Time += L1.num_of_cycles;
 		UPDATE_LRU_combine(set_L1, location_found_1, &L1);//UPDATE_LRU_combine(set_L1, L1_cache); // UPDATE_LRU_1(set_L1);
 		// return;
-		break;
-	case 0:
+	}
+	else
+	{
 		// L1 READ MISS
 		if (DEBUG) printf("L1 READ MISS\n");
 		L1_accesses++;
@@ -306,10 +305,8 @@ void Cache_Read()
 			Insert_2(current_tag_L2, current_set_L2);
 			Insert_1(current_tag_L1, current_set_L1);
 		}
-		break;
 	}
-	if (DEBUG)
-		printf("left cache read\n");
+	if (DEBUG)printf("left cache read\n");
 }
 
 
@@ -382,76 +379,62 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 
 }
 
+void Insert_2(unsigned long int tag, unsigned long int set)
+{
 
-void Insert_2(unsigned long int tag, unsigned long int set){
-
-	if(DEBUG) printf("L2 INSERT\n");
-	unsigned i=0;
+	if (DEBUG)
+		printf("L2 INSERT\n");
+	unsigned i = 0;
 	bool found_empty = false;
-	//looking for non valid bit in specific set
-	while(!found_empty && i<(L2.num_ways)*NUM_COL){
-		if(L2.cache[set][i+VALID]){
-			i+=NUM_COL;
+	// looking for non valid bit in specific set
+	while (!found_empty && i < (L2.num_ways) * NUM_COL)
+	{
+		if (L2.cache[set][i + VALID])
+		{
+			i += NUM_COL;
 		}
-		else{
-			found_empty=true;
+		else
+		{
+			found_empty = true;
 		}
-		//L2_total_access++;
+		// L2_total_access++;
 	}
-	//found an available way in L2, putting data
-	if(found_empty){
-		L2.cache[set][i+VALID]=1;
-		L2.cache[set][i+TAG]=tag;
-		L2.cache[set][i+DIRTY]=0;
-		L2.cache[set][i+ADDRESS]=current_address;
-		location_found_2=i;
-		UPDATE_LRU_combine(set_L2, location_found_2, &L2);//UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
+	// found an available way in L2, putting data
+	if (found_empty)
+	{
+		L2.cache[set][i + VALID] = 1;
+		L2.cache[set][i + TAG] = tag;
+		L2.cache[set][i + DIRTY] = 0;
+		L2.cache[set][i + ADDRESS] = current_address;
+		location_found_2 = i;
+		UPDATE_LRU_combine(set_L2, location_found_2, &L2); // UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
 	}
 	else
-	{//didn't find available way in L2, making eviction and putting data
-		if(L2.cache[set][L2.least_used[set]+DIRTY]){
+	{ // didn't find available way in L2, making eviction and putting data
+		if (L2.cache[set][L2.least_used[set] + DIRTY])
+		{
 			Memory_Total_Access++;
-			Total_Access_Time+=Memory_Cycles;
-		}		
-		L2.cache[set][L2.least_used[set]+TAG] = tag;
-		L2.cache[set][L2.least_used[set]+DIRTY]=0;
-		L2.cache[set][L2.least_used[set]+VALID]=1;
-		unsigned long int address_evicted = L2.cache[set][L2.least_used[set]+ADDRESS];
-		L2.cache[set][L2.least_used[set]+ADDRESS]=current_address;	
-		unsigned long int set_evicted_1= (address_evicted>>((unsigned long int)(Block_Size)))%((unsigned long int)(L1.set_size));
-		unsigned long int tag_evicted_1= (address_evicted>>((unsigned long int)(Block_Size)+(unsigned long int)log2((L1.set_size))));	
-		location_found_2=L2.least_used[set];
-		UPDATE_LRU_combine(set_L2, location_found_2, &L2);//UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
-		if(Search_combine(tag_evicted_1, set_evicted_1, &L1))///*Search_combine(tag_evicted_1, set_evicted_1, L1_cache)*//*Search_1(tag_evicted_1, set_evicted_1)*/){
-		{	
-			L1.cache[set_evicted_1][location_found_1+VALID]=0;
-			L1.cache[set_evicted_1][location_found_1+DIRTY]=0;
-			L1.cache[set_evicted_1][location_found_1+TAG] = MAX_VALUE;
-			L1.cache[set_evicted_1][location_found_1+ADDRESS]=0;
-			L1.cache[set_evicted_1][location_found_1+LRU]=0;
+			Total_Access_Time += Memory_Cycles;
+		}
+		L2.cache[set][L2.least_used[set] + TAG] = tag;
+		L2.cache[set][L2.least_used[set] + DIRTY] = 0;
+		L2.cache[set][L2.least_used[set] + VALID] = 1;
+		unsigned long int address_evicted = L2.cache[set][L2.least_used[set] + ADDRESS];
+		L2.cache[set][L2.least_used[set] + ADDRESS] = current_address;
+		unsigned long int set_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size))) % ((unsigned long int)(L1.set_size));
+		unsigned long int tag_evicted_1 = (address_evicted >> ((unsigned long int)(Block_Size) + (unsigned long int)log2((L1.set_size))));
+		location_found_2 = L2.least_used[set];
+		UPDATE_LRU_combine(set_L2, location_found_2, &L2);	   // UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
+		if (Search_combine(tag_evicted_1, set_evicted_1, &L1)) ///*Search_combine(tag_evicted_1, set_evicted_1, L1_cache)*//*Search_1(tag_evicted_1, set_evicted_1)*/){
+		{
+			L1.cache[set_evicted_1][location_found_1 + VALID] = 0;
+			L1.cache[set_evicted_1][location_found_1 + DIRTY] = 0;
+			L1.cache[set_evicted_1][location_found_1 + TAG] = MAX_VALUE;
+			L1.cache[set_evicted_1][location_found_1 + ADDRESS] = 0;
+			L1.cache[set_evicted_1][location_found_1 + LRU] = 0;
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // READY FUNCTIONS DOWN HERE vvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
@@ -522,9 +505,8 @@ void UPDATE_LRU_combine(unsigned set, unsigned location, Cache* cache_ptr)
 void Cache_Write(){
 	//searching the tag according to the set value in all 'ways'
 	Total_Accesses++;
-	bool found_1 = Search_combine(tag_L1, set_L1, &L1); // Search_combine(tag_L1, set_L1, L1_cache);//Search_1(tag, set);
-	int found = (found_1) ? 1 : 0;
-	if (DEBUG)printf("write search result is: %d\n", found_1);
+	bool found = Search_combine(tag_L1, set_L1, &L1); // Search_combine(tag_L1, set_L1, L1_cache);//Search_1(tag, set);
+	if (DEBUG)printf("write search result is: %d\n", found);
 	if (DEBUG)printf("entered cache write\n");
 	if (Write_Alloc)
 	{
@@ -539,7 +521,7 @@ void Cache_Write(){
 	if(DEBUG) printf("left write\n");
 }
 
-void Write_With_Allocate(int found)
+void Write_With_Allocate(bool found)
 {
 	if (found)
 	{
@@ -589,9 +571,8 @@ void Write_With_Allocate(int found)
 	}
 }
 
-void Write_No_Allocate(int found)
+void Write_No_Allocate(bool found)
 {
-
 	if (found)
 	{
 		// L1 WRITE HIT
