@@ -617,7 +617,7 @@ void Insert_L1(unsigned long int tag, unsigned long int set)
 
 
 		location_found_1 = i;
-		UPDATE_LRU(set_L1, location_found_1, &L1);
+		UPDATE_LRU(set, location_found_1, &L1);
 		if (write_mem || write_L2)
 		{
 			L1.cache[set][i + DIRTY] = 1;
@@ -635,7 +635,7 @@ void Insert_L1(unsigned long int tag, unsigned long int set)
 			L1.cache[set][L1.least_used[set] + ADDRESS] = current_address;
 
 			location_found_1 = L1.least_used[set];
-			UPDATE_LRU(set_L1, location_found_1, &L1);
+			UPDATE_LRU(set, location_found_1, &L1);
 			if (write_mem || write_L2)
 			{
 				L1.cache[set][L1.least_used[set] + DIRTY] = 1;
@@ -644,9 +644,9 @@ void Insert_L1(unsigned long int tag, unsigned long int set)
 			break;
 		case DIRTY:
 			Calculate_Set_Tag(L1.cache[set][L1.least_used[set] + ADDRESS]);
-			if (Search(tag_L2, set_L2, &L2))
+			if (Search(current_tag_L2, current_set_L2, &L2))
 			{
-				UPDATE_LRU(set_L2, location_found_2, &L2);
+				UPDATE_LRU(current_set_L2, location_found_2, &L2);
 				// KICKING AND FILLING
 				L1.cache[set][L1.least_used[set] + DIRTY] = 0;
 				L1.cache[set][L1.least_used[set] + VALID] = 1;
@@ -654,7 +654,7 @@ void Insert_L1(unsigned long int tag, unsigned long int set)
 				L1.cache[set][L1.least_used[set] + ADDRESS] = current_address;
 				
 				location_found_1 = L1.least_used[current_set_L1];
-				UPDATE_LRU(set_L1, location_found_1, &L1);
+				UPDATE_LRU(set, location_found_1, &L1);
 				if (write_mem || write_L2)
 				{
 					L1.cache[set][L1.least_used[set] + DIRTY] = 1;
@@ -695,7 +695,7 @@ void Insert_L2(unsigned long int tag, unsigned long int set)
 		L2.cache[set][i + DIRTY] = 0;
 		L2.cache[set][i + ADDRESS] = current_address;
 		location_found_2 = i;
-		UPDATE_LRU(set_L2, location_found_2, &L2);
+		UPDATE_LRU(set, location_found_2, &L2);
 	}
 	else
 	{ 
@@ -719,7 +719,7 @@ void Insert_L2(unsigned long int tag, unsigned long int set)
 
 
 		location_found_2 = L2.least_used[set];
-		UPDATE_LRU(set_L2, location_found_2, &L2);
+		UPDATE_LRU(set, location_found_2, &L2);
 		if (Search(tag_victim, set_victim, &L1))
 		{
 			L1.cache[set_victim][location_found_1 + DIRTY] = 0;
