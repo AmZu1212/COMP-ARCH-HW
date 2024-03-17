@@ -57,17 +57,17 @@ void Cache_init(unsigned MemCyc, unsigned BSize, unsigned L1Size, unsigned L2Siz
 			unsigned L2Assoc, unsigned L1Cyc, unsigned L2Cyc, unsigned WrAlloc);
 void Insert_1(unsigned long int tag, unsigned long int set);
 void Insert_2(unsigned long int tag, unsigned long int set);
-void UPDATE_LRU_1(unsigned set);
-void UPDATE_LRU_2(unsigned set);
-//void UPDATE_LRU_Combine(unsigned set,cache_type type);
+//void UPDATE_LRU_1(unsigned set);
+//void UPDATE_LRU_2(unsigned set);
+void UPDATE_LRU_combine(unsigned set,cache_type type);
 //bool Search_1(unsigned long int tag, unsigned long int set);
 //bool Search_2(unsigned long int tag, unsigned long int set);
 bool Search_combine(unsigned long int tag, unsigned long int set,cache_type type);
 void Calculate_Set_Tag(unsigned long int address);
 void Cache_Write(unsigned long int tag, unsigned long int set);
 void Cache_Read(unsigned long int tag, unsigned long int set);
-void Print_L1();
-void Print_L2();
+//void Print_L1();
+//void Print_L2();
 /* Statistics Variables */
 //
 double L1_hits = 0;
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 	}
-	//if(DEBUG) printf("passed the arg grabs\n");
+	if(DEBUG) printf("passed the arg grabs\n");
 	// CACHE INITIALIZER LINE <-----------------------------------------------------------------------
 	Block_Size = BSize;
 	Memory_Cycles = MemCyc;
@@ -192,9 +192,7 @@ int main(int argc, char **argv)
 
 	Cache_init(MemCyc, BSize,L1Size  ,L2Size, L1Assoc,
 			L2Assoc, L1Cyc, L2Cyc, WrAlloc);
-	//if(DEBUG) printf("done with cache inits\n");
-	//printf("L1 set_size is %d.\n", L1.set_size);
-	//printf("L2 set_size is %d.\n", L2.set_size);
+
 	int k = 1;
 	while (getline(file, line))
 	{
@@ -337,8 +335,10 @@ void Cache_init(unsigned MemCyc, unsigned BSize, unsigned L1Size, unsigned L2Siz
 	for(unsigned i=0; i<L2.num_lines; i++){
 		L2.least_used[i]=0;
 	}
-	if(DEBUG) Print_L1();		
+	//if(DEBUG) Print_L1();		
 }
+
+
 void Cache_Write(unsigned long int tag, unsigned long int set){
 	//searching the tag according to the set value in all 'ways'
 	if(DEBUG) printf("entered cache write\n");
@@ -366,7 +366,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 					L1_accesses++;
 					L1_hits++;
 					Total_Access_Time+=L1.num_of_cycles;
-					UPDATE_LRU_1(set);
+					UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set);
 					L1.cache[set][location_found_1+DIRTY]=1;
 					L1.cache[set][location_found_1+ADDRESS]=current_address;
 					//return;
@@ -384,7 +384,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 						L2_hits++;
 						//L1_total_access++;
 						//Total_Access_time+=cache->L1Cyc;
-						UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
+						UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
 						//cache->Cache_L2[set_2][loc_found_2+DIRTY]=1;
 						Insert_1(tag_L1, set_L1);//not sure were supposed to insert in L1 needs checking
 						flag_write_L2 = false;
@@ -410,7 +410,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 					L1_accesses++;
 					L1_hits++;
 					Total_Access_Time+=L1.num_of_cycles;
-					UPDATE_LRU_1(set_L1);
+					UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set_L1);
 					L1.cache[set_L1][location_found_1+DIRTY]=1;
 					//return;
 					break;
@@ -424,7 +424,7 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 						if(DEBUG) printf("L2 WRITE HIT(NO ALLOC)\n");
 						L2_hits++;
 						Total_Access_Time += L1.num_of_cycles+L2.num_of_cycles;
-						UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
+						UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
 						L2.cache[set_L2][location_found_2+DIRTY]=1;
 						//Insert_1(tag_1, set_1);//not sure were supposed to insert in L1 needs checking
 					}
@@ -436,10 +436,10 @@ void Cache_Write(unsigned long int tag, unsigned long int set){
 			}
 			break;
 	}
-	if(DEBUG){
-		Print_L1();
-		Print_L2();
-	} 	
+	//if(DEBUG){
+	//	Print_L1();
+	//	Print_L2();
+	//} 	
 	if(DEBUG) printf("left write\n");
 }
 void Cache_Read(unsigned long int tag, unsigned long int set){
@@ -455,7 +455,7 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 			L1_accesses++;
 			L1_hits++;
 			Total_Access_Time+=L1.num_of_cycles;
-			UPDATE_LRU_1(set_L1);
+			UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set_L1);
 			//return;
 			break;
 		//didnt find in L1, READ MISS, go to serach in L2
@@ -468,7 +468,7 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 				if(DEBUG) printf("L2 READ HIT\n");
 				Total_Access_Time+=L1.num_of_cycles+L2.num_of_cycles;
 				L2_hits++;
-				UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
+				UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set_L2);//update on the block we want to insert in L1
 				Insert_1(tag_L1, set_L1);//not sure were supposed to insert in L1 needs checking
 			}
 			else{
@@ -485,72 +485,17 @@ void Cache_Read(unsigned long int tag, unsigned long int set){
 			}
 			break;
 	}
-	if(DEBUG){
-		Print_L1();
-		Print_L2();
-	} 
+	//if(DEBUG){
+	//	Print_L1();
+	//	Print_L2();
+	//} 
 	if(DEBUG) printf("left cache read\n");
 }
 
 
-//===============================================================================
-bool Search_1(unsigned long int tag, unsigned long int set){
-	unsigned way=0;
-	if(DEBUG) printf("L1 SEARCH\n");
-	while(way<(L1.num_ways)*NUM_COL){
-		if(L1.cache[set][way+TAG] == tag && L1.cache[set][way+VALID]){
-			location_found_1 = way;
-			return true;
-		}
-		way+=NUM_COL;
-	}
-	return false;
-}
-bool Search_2(unsigned long int tag, unsigned long int set){
-	unsigned way=0;
-	if(DEBUG) printf("L2 SEARCH\n");
-	while(way<(L2.num_ways)*NUM_COL){
-		if(L2.cache[set][way+TAG] == tag && L2.cache[set][way+VALID]){
-			location_found_2 = way;
-			return true;
-		}
-		way+=NUM_COL;
-	}
-	return false;
-}
 
-bool Search_combine(unsigned long int tag, unsigned long int set, cache_type type)
-{
-	unsigned way = 0;
-	switch (type)
-	{
-	case L1_cache:
-		if (DEBUG)printf("L1 SEARCH\n");
-		while (way < (L1.num_ways) * NUM_COL)
-		{
-			if (L1.cache[set][way + TAG] == tag && L1.cache[set][way + VALID])
-			{
-				location_found_1 = way;
-				return true;
-			}
-			way += NUM_COL;
-		}
-		return false;
 
-	case L2_cache:
-		if (DEBUG)printf("L2 SEARCH\n");
-		while (way < (L2.num_ways) * NUM_COL)
-		{
-			if (L2.cache[set][way + TAG] == tag && L2.cache[set][way + VALID])
-			{
-				location_found_2 = way;
-				return true;
-			}
-			way += NUM_COL;
-		}
-		return false;
-	}
-}
+
 //===============================================================================
 void Insert_1(unsigned long int tag, unsigned long int set){
 	//if(DEBUG) printf("entered insert (for cache 1)\n");
@@ -575,7 +520,7 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 		L1.cache[set][i+DIRTY]=0;
 		L1.cache[set][i+ADDRESS]=current_address;
 		location_found_1=i;
-		UPDATE_LRU_1(set);
+		UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set);
 		//if(DEBUG) printf("check if enters \n");
 		if(flag_write_mem || flag_write_L2){
 			L1.cache[set][i+DIRTY]=1;
@@ -593,7 +538,7 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 				L1.cache[set][L1.least_used[set]+VALID]=1;
 				L1.cache[set][L1.least_used[set]+ADDRESS]=current_address;
 				location_found_1=L1.least_used[set];
-				UPDATE_LRU_1(set);
+				UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set);
 				if(flag_write_mem || flag_write_L2){
 					L1.cache[set][L1.least_used[set]+DIRTY]=1;
 				}
@@ -602,25 +547,17 @@ void Insert_1(unsigned long int tag, unsigned long int set){
 				Calculate_Set_Tag(L1.cache[set][L1.least_used[set]+ADDRESS]);
 				if(Search_combine(tag_L2, set_L2, L2_cache)/*Search_2(current_tag_L2, current_set_L2)*/){
 					//loc_found_2 = cache->Least_used_2[addresses->current_set_2];
-					UPDATE_LRU_2(current_set_L2);//needs to update in L2 the block which is being evictes in L1
+					UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(current_set_L2);//needs to update in L2 the block which is being evictes in L1
 					//eviction and saving
 					L1.cache[set][L1.least_used[set]+VALID]=1;
 					L1.cache[set][L1.least_used[set]+TAG]=tag;
 					L1.cache[set][L1.least_used[set]+ADDRESS]=current_address;
 					L1.cache[set][L1.least_used[set]+DIRTY]=0;
 					location_found_1=L1.least_used[current_set_L1];
-					UPDATE_LRU_1(set);
+					UPDATE_LRU_combine(set_L1, L1_cache);//UPDATE_LRU_1(set);
 					if(flag_write_mem || flag_write_L2){
 						L1.cache[set][L1.least_used[set]+DIRTY]=1;
 					}
-					//Total_Access_time+=cache->L1Cyc + cache->L2Cyc;
-					//L1_total_access++;
-					//update_LRU1 on the newest tag that weve inserted
-				}
-				//didn't find in L2, have to keep it there
-				else{
-					//needs to find least_used_L2 and least_used_L1 and then update both
-					//changes the tag and then update to L2 
 				}
 				break;
 		}
@@ -649,7 +586,7 @@ void Insert_2(unsigned long int tag, unsigned long int set){
 		L2.cache[set][i+DIRTY]=0;
 		L2.cache[set][i+ADDRESS]=current_address;
 		location_found_2=i;
-		UPDATE_LRU_2(set);
+		UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
 	}
 	else
 	{//didn't find available way in L2, making eviction and putting data
@@ -665,7 +602,7 @@ void Insert_2(unsigned long int tag, unsigned long int set){
 		unsigned long int set_evicted_1= (address_evicted>>((unsigned long int)(Block_Size)))%((unsigned long int)(L1.set_size));
 		unsigned long int tag_evicted_1= (address_evicted>>((unsigned long int)(Block_Size)+(unsigned long int)log2((L1.set_size))));	
 		location_found_2=L2.least_used[set];
-		UPDATE_LRU_2(set);
+		UPDATE_LRU_combine(set_L2, L2_cache);//UPDATE_LRU_2(set);
 		if(Search_combine(tag_evicted_1, set_evicted_1, L1_cache)/*Search_1(tag_evicted_1, set_evicted_1)*/){
 			L1.cache[set_evicted_1][location_found_1+VALID]=0;
 			L1.cache[set_evicted_1][location_found_1+DIRTY]=0;
@@ -676,88 +613,92 @@ void Insert_2(unsigned long int tag, unsigned long int set){
 	}
 }
 
-//====================================================================================================================
-void UPDATE_LRU_1(unsigned set){
-	if(DEBUG) printf("L1 UPDATE\n");
-	bool found=false;
-	unsigned last_access = L1.cache[set][location_found_1+LRU];
-	//if(DEBUG) printf("last access %d \n",last_access);
-	L1.cache[set][location_found_1+LRU] = L1.num_ways-1;//last way to get accessed
-	//if(DEBUG) printf("LRU is %d \n", L1.cache[set][location_found_1+LRU]);
-	for(unsigned i=LRU; i < L1.num_ways*NUM_COL; i+=NUM_COL){//updates i to each beginning of a new WAY
-		if((i!=location_found_1+LRU) && (L1.cache[set][i] > last_access)){
-			L1.cache[set][i]--;
-			//if(DEBUG) printf("your'e not supposed to be here \n");
+
+void UPDATE_LRU_combine(unsigned set, cache_type type)
+{
+	if (type == L1_cache)
+	{
+		if (DEBUG)
+			printf("L1 UPDATE\n");
+		bool found1 = false;
+		unsigned last_access = L1.cache[set][location_found_1 + LRU];
+		L1.cache[set][location_found_1 + LRU] = L1.num_ways - 1; // last way to get accessed
+		for (unsigned i = LRU; i < L1.num_ways * NUM_COL; i += NUM_COL)
+		{ // updates i to each beginning of a new WAY
+			if ((i != location_found_1 + LRU) && (L1.cache[set][i] > last_access))
+			{
+				L1.cache[set][i]--;
+			}
+			if (L1.cache[set][i] == 0 && !found1)
+			{
+				L1.least_used[set] = i - LRU; //-LRU
+				found1 = true;
+			}
 		}
-		if(L1.cache[set][i] == 0 && !found){
-			L1.least_used[set]=i-LRU;//-LRU
-			found=true;
+	}
+	else
+	{
+		if (DEBUG)printf("L2 UPDATE\n");
+		bool found2 = false;
+		unsigned last_access = L2.cache[set][location_found_2 + LRU];
+		L2.cache[set][location_found_2 + LRU] = L2.num_ways - 1;
+		for (unsigned i = LRU; i < L2.num_ways * NUM_COL; i += NUM_COL)
+		{
+			if ((i != location_found_2 + LRU) && (L2.cache[set][i] > last_access))
+			{
+				L2.cache[set][i]--;
+			}
+			if (L2.cache[set][i] == 0 && !found2)
+			{
+				L2.least_used[set] = i - LRU; //-LRU
+				found2 = true;
+			}
 		}
 	}
 }
-void UPDATE_LRU_2(unsigned set){
-	if(DEBUG) printf("L2 UPDATE\n");
-	bool found=false;
-	unsigned last_access = L2.cache[set][location_found_2+LRU];
-	L2.cache[set][location_found_2+LRU] = L2.num_ways-1;
-	for(unsigned i=LRU; i < L2.num_ways*NUM_COL; i+=NUM_COL){
-		if((i!=location_found_2+LRU) && (L2.cache[set][i] > last_access)){
-			L2.cache[set][i]--;
-		}
-		if(L2.cache[set][i] == 0 && !found){
-			L2.least_used[set]=i-LRU;//-LRU
-			found=true;
-		}
-	}	
-}
-//===========================================================================================================================
-//void UPDATE_LRU_Combine(unsigned set,cache_type type){
-	//if(type == L1_cache){
-	//if(DEBUG) printf("L1 UPDATE\n");
-	//bool found1=false;
-	//unsigned last_access = L1.cache[set][location_found_1+LRU];
-	//if(DEBUG) printf("last access %d \n",last_access);
-	//L1.cache[set][location_found_1+LRU] = L1.num_ways-1;//last way to get accessed
-	//if(DEBUG) printf("LRU is %d \n", L1.cache[set][location_found_1+LRU]);
-	//for(unsigned i=LRU; i < L1.num_ways*NUM_COL; i+=NUM_COL){//updates i to each beginning of a new WAY
-		//if((i!=location_found_1+LRU) && (L1.cache[set][i] > last_access)){
-			//L1.cache[set][i]--;
-			//if(DEBUG) printf("your'e not supposed to be here \n");
-		//}
-		//if(L1.cache[set][i] == 0 && !found1){
-		//	L1.least_used[set]=i-LRU;//-LRU
-			//found1=true;
-		//}
-	//}
-//}
-       //else
-	 //  if(DEBUG) printf("L2 UPDATE\n");
-//	bool found2=false;
-	//unsigned last_access = L2.cache[set][location_found_2+LRU];
-//	L2.cache[set][location_found_2+LRU] = L2.num_ways-1;
-	//for(unsigned i=LRU; i < L2.num_ways*NUM_COL; i+=NUM_COL){
-	//	if((i!=location_found_2+LRU) && (L2.cache[set][i] > last_access)){
-		//	L2.cache[set][i]--;
-		//}
-		//if(L2.cache[set][i] == 0 && !found2){
-			//L2.least_used[set]=i-LRU;//-LRU
-			//found2=true;
-		//}
-	//}	
-	      
-
-//}
 
 
-
+// MAKE THIS MORE ETHTETICvvv (EASY)
 void Calculate_Set_Tag(unsigned long int address){
 	current_tag_L1 = (address>>((unsigned long int)(Block_Size)+(unsigned long int)log2(L1.set_size)));
-	current_set_L1 = (address>>((unsigned long int)(Block_Size)))%(unsigned long int)(L1.set_size);
-
 	current_tag_L2 = (address>>((unsigned long int)(Block_Size)+(unsigned long int)log2(L2.set_size)));
+	current_set_L1 = (address>>((unsigned long int)(Block_Size)))%(unsigned long int)(L1.set_size);
 	current_set_L2 = (address>>((unsigned long int)(Block_Size)))%(unsigned long int)(L2.set_size);
 }
-void Print_L1(){
+bool Search_combine(unsigned long int tag, unsigned long int set, cache_type type)
+{
+	unsigned way = 0;
+	switch (type)
+	{
+		case L1_cache:
+			if (DEBUG)printf("L1 SEARCH\n");
+			while (way < (L1.num_ways) * NUM_COL)
+			{
+				if (L1.cache[set][way + TAG] == tag && L1.cache[set][way + VALID])
+				{
+					location_found_1 = way;
+					return true;
+				}
+				way += NUM_COL;
+			}
+			return false;
+
+		case L2_cache:
+			if (DEBUG)printf("L2 SEARCH\n");
+			while (way < (L2.num_ways) * NUM_COL)
+			{
+				if (L2.cache[set][way + TAG] == tag && L2.cache[set][way + VALID])
+				{
+					location_found_2 = way;
+					return true;
+				}
+				way += NUM_COL;
+			}
+			return false;
+	}
+}
+// REMOVE THE PRINT FUNCTIONS, THE YARE USELESS vvvv (EASY)
+/*void Print_L1(){
 	unsigned j=0;
 	int count=5;
 	for(unsigned i =0; i<L1.num_lines;i++){
@@ -824,5 +765,70 @@ void Print_L2(){
 		printf("\n");
 	}
 	printf("\n");
-}
+}*/
 
+
+
+/*
+//===============================================================================
+bool Search_1(unsigned long int tag, unsigned long int set){
+	unsigned way=0;
+	if(DEBUG) printf("L1 SEARCH\n");
+	while(way<(L1.num_ways)*NUM_COL){
+		if(L1.cache[set][way+TAG] == tag && L1.cache[set][way+VALID]){
+			location_found_1 = way;
+			return true;
+		}
+		way+=NUM_COL;
+	}
+	return false;
+}
+bool Search_2(unsigned long int tag, unsigned long int set){
+	unsigned way=0;
+	if(DEBUG) printf("L2 SEARCH\n");
+	while(way<(L2.num_ways)*NUM_COL){
+		if(L2.cache[set][way+TAG] == tag && L2.cache[set][way+VALID]){
+			location_found_2 = way;
+			return true;
+		}
+		way+=NUM_COL;
+	}
+	return false;
+}*/
+
+
+//====================================================================================================================
+/*void UPDATE_LRU_1(unsigned set){
+	if(DEBUG) printf("L1 UPDATE\n");
+	bool found=false;
+	unsigned last_access = L1.cache[set][location_found_1+LRU];
+	//if(DEBUG) printf("last access %d \n",last_access);
+	L1.cache[set][location_found_1+LRU] = L1.num_ways-1;//last way to get accessed
+	//if(DEBUG) printf("LRU is %d \n", L1.cache[set][location_found_1+LRU]);
+	for(unsigned i=LRU; i < L1.num_ways*NUM_COL; i+=NUM_COL){//updates i to each beginning of a new WAY
+		if((i!=location_found_1+LRU) && (L1.cache[set][i] > last_access)){
+			L1.cache[set][i]--;
+			//if(DEBUG) printf("your'e not supposed to be here \n");
+		}
+		if(L1.cache[set][i] == 0 && !found){
+			L1.least_used[set]=i-LRU;//-LRU
+			found=true;
+		}
+	}
+}*/
+/*void UPDATE_LRU_2(unsigned set){
+	if(DEBUG) printf("L2 UPDATE\n");
+	bool found=false;
+	unsigned last_access = L2.cache[set][location_found_2+LRU];
+	L2.cache[set][location_found_2+LRU] = L2.num_ways-1;
+	for(unsigned i=LRU; i < L2.num_ways*NUM_COL; i+=NUM_COL){
+		if((i!=location_found_2+LRU) && (L2.cache[set][i] > last_access)){
+			L2.cache[set][i]--;
+		}
+		if(L2.cache[set][i] == 0 && !found){
+			L2.least_used[set]=i-LRU;//-LRU
+			found=true;
+		}
+	}	
+}*/
+//===========================================================================================================================
