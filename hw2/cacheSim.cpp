@@ -19,7 +19,9 @@ using std::stringstream;
 #define NUMBERS_COLOUMN 5 
 #define MAX_VALUE 4294967295
 
-// =============== also change this ==========================
+// written by amir and liz
+
+// =============== ENUMS ==========================
 enum write_protocol
 {
 	NO_ALLOC = 0,
