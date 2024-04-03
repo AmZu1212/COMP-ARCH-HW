@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "cmath": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "math.h": "c"
     }
 }
