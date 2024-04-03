@@ -52,9 +52,11 @@ Instruction FG_Instruction;
 
 
 
-
+// need to make a thread initializer.
+// the MTs get initialized within the function already.
 
 void CORE_BlockedMT() {
+
 	// First we initiate global constants.
 	Blocked.contextSwitchCycles = SIM_GetSwitchCycles();
 	Blocked.storeLatency		= SIM_GetStoreLat();
@@ -62,7 +64,34 @@ void CORE_BlockedMT() {
 	Blocked.numOfThreads		= SIM_GetThreadsNum();
 	Blocked.totalCycleCount		= 0;
 
-	// Now we initiate the threads data base and queue.
+
+	// Now we initialize each thread, then insert them to the queue 1 by 1.
+	for (size_t i = 0; i < Blocked.numOfThreads; i++)
+	{
+
+		// Create a new thread
+        Thread newThread;
+
+        // Initialize the thread with proper values
+        newThread.id 				= i;
+        newThread.halted 			= 0;
+        newThread.available 		= 0;
+        newThread.loadCounter 		= 0;
+        newThread.storeCounter 		= 0;
+        newThread.instructionNumber = 0;
+
+        // Insert the thread to the queue
+        Blocked.threads.push(newThread);
+		
+		// (*) - in cpp, when inserting to a container, 
+		// 		 we create a copy of the object thats is 
+		//		 inserted. so we can create and use the same name,
+		//		 while avoiding pointers :)
+	}
+
+
+
+	
 
 
 
