@@ -251,13 +251,9 @@ void SIM_MemFree(){
 }
 
 void SIM_MemDataRead(uint32_t addr, int32_t *dst) {
-   // printf("entered data read, addr is: %d, data_start is: %d\n", addr, data_start);
     int addr_i = addr - data_start;
-   // printf("calculated addr_i\n");
     addr_i = addr_i / 4;
-   // printf("filling dest, addr_i is: %d\n", addr_i);
     *dst = data[addr_i];
-    //printf("exiting data read\n");
 }
 
 void SIM_MemDataWrite(uint32_t addr, int32_t val) {
