@@ -35,7 +35,7 @@ struct MT{
 	int loadLatency;
 	int storeLatency;
 	int numOfThreads;
-	int totalCycleCount;
+	double totalCycleCount;
 	int contextSwitchCycles;
 	std::vector<Thread> threads; // Queue of threads
 };
@@ -286,7 +286,7 @@ double CORE_BlockedMT_CPI()
 	}
 	//printf("total instruction count is: %d\n", totalInstructionCount);
 	//printf("total counted cycles is: %d\n", Blocked.totalCycleCount);
-	double cpi = ((double)Blocked.totalCycleCount) / totalInstructionCount;
+	double cpi = Blocked.totalCycleCount / totalInstructionCount;//((double)Blocked.totalCycleCount) / totalInstructionCount;
 	return cpi;
 }
 
@@ -432,6 +432,11 @@ void CORE_FinegrainedMT()
 			// CODE NOTICE - can we get stuck here if everyone is halted? seems dangerous
 		}
 
+
+
+
+		idleCount = 0;
+		
 		// Load the next command
 		SIM_MemInstRead(FineGrained.threads[threadID].instructionCounter, FG_Instruction, threadID);
 		src1 = FG_Instruction->src1_index;
@@ -527,9 +532,11 @@ double CORE_FinegrainedMT_CPI()
 		// we sum up all the instructions we did to calc the CPI
 	int totalInstructionCount = 0;
 	for(int i = 0; i < FineGrained.numOfThreads; i++){
+		//printf("\nthread %d did %d instructions\n", i, FineGrained.threads[i].instructionCounter);
 		totalInstructionCount += FineGrained.threads[i].instructionCounter;
 	}
-	double cpi = ((double)FineGrained.totalCycleCount) / totalInstructionCount;
+	//printf("\nnum inst = %d, cyclesfg = %f\n", totalInstructionCount, FineGrained.totalCycleCount);
+	double cpi = FineGrained.totalCycleCount / totalInstructionCount;
 	return cpi;
 }
 

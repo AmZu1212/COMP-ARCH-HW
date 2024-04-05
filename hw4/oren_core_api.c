@@ -422,13 +422,14 @@ void CORE_FinegrainedMT() {
 double CORE_FinegrainedMT_CPI(){
 	int num_inst = 0;
 	for(int i =0; i<fg_mt->num_threads;i++){
+		printf("\nthread %d did %d instructions\n", i, fg_mt->arr[i][INST_NUM]);
 		num_inst+=fg_mt->arr[i][INST_NUM];
 	}
 	free(fg_mt->arr);
 	free(fg_mt);
 	free(reg_arr_finegrained);
 	free(instrcution_fg);
-	if (DEBUG2) printf("\nnum inst = %d, cyclesfg = %f\n", num_inst, global_cycle_count_finegrained);
+	printf("\nnum inst = %d, cyclesfg = %f\n", num_inst, global_cycle_count_finegrained);
 	double cpi = global_cycle_count_finegrained/num_inst;
 	return cpi;
 }
@@ -439,25 +440,28 @@ void CORE_FinegrainedMT_CTX(tcontext* context, int threadid) {
 	}
 }
 
-void Updates_FINEGRAINED(struct FG_MT *fg_mt){
-	for(int i =0; i<fg_mt->num_threads;i++){
-		if(fg_mt->arr[i][AVAILABLE] == 0){
-			if(fg_mt->arr[i][LOAD_CTR]!=0){
+void Updates_FINEGRAINED(struct FG_MT *fg_mt)
+{
+	for (int i = 0; i < fg_mt->num_threads; i++)
+	{
+		if (fg_mt->arr[i][AVAILABLE] == 0)
+		{
+			if (fg_mt->arr[i][LOAD_CTR] != 0)
+			{
 				fg_mt->arr[i][LOAD_CTR]--;
-				if(fg_mt->arr[i][LOAD_CTR]==0){
+				if (fg_mt->arr[i][LOAD_CTR] == 0)
+				{
 					fg_mt->arr[i][AVAILABLE] = 1;
 				}
 			}
-			if(fg_mt->arr[i][STORE_CTR]!=0){
+			if (fg_mt->arr[i][STORE_CTR] != 0)
+			{
 				fg_mt->arr[i][STORE_CTR]--;
-				if(fg_mt->arr[i][STORE_CTR]==0){
+				if (fg_mt->arr[i][STORE_CTR] == 0)
+				{
 					fg_mt->arr[i][AVAILABLE] = 1;
 				}
 			}
 		}
 	}
 }
-
-
-
-

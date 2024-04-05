@@ -1,0 +1,8 @@
+Running tests...
+The test succeed if there are no diffs printed.
+
+The test tests/test2174 didnt pass
+The test tests/test2300 didnt pass
+The test tests/test281 didnt pass
+
+Ran all tests.
