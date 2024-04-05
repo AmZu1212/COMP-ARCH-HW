@@ -6,7 +6,6 @@
 
 int main(int argc, char const *argv[]){
 	char const *memFname = argv[1];
-
 	if (SIM_MemReset(memFname) != 0) {
 		fprintf(stderr, "Failed initializing memory simulator!\n");
 	    exit(2);

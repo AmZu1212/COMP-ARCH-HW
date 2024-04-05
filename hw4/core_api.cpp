@@ -3,6 +3,7 @@
 #include "core_api.h"
 #include "sim_api.h"
 #include <stdio.h>
+#include <iostream>
 #include <math.h>
 #include <stdlib.h>
 #include <vector>
@@ -46,8 +47,8 @@ struct MT FineGrained;
 
 
 // current instruction for each multi-threading.
-Instruction BLK_Instruction;
-Instruction FG_Instruction;
+Instruction *BLK_Instruction;
+Instruction *FG_Instruction;
 
 
 // =================================== Helper Functions Declarations ===============================
@@ -59,7 +60,6 @@ void UpdateThreadCountersFG();
 // the Blocked MT get initialized in this function.
 void CORE_BlockedMT() 
 {
-
 	// First we initiate constants.
 	Blocked.contextSwitchCycles = SIM_GetSwitchCycles();
 	Blocked.storeLatency		= SIM_GetStoreLat();
@@ -71,7 +71,7 @@ void CORE_BlockedMT()
     Blocked.threads.resize(Blocked.numOfThreads);
 
 	// Now we initialize each thread, then insert them to the queue 1 by 1.
-	for (size_t i = 0; i < Blocked.numOfThreads; i++)
+	for (int i = 0; i < Blocked.numOfThreads; i++)
 	{
 
 		// Create a alias, and fill it with data
@@ -80,17 +80,20 @@ void CORE_BlockedMT()
 		// Initialize the thread with proper values
 		newThread.id 				 = i;
 		newThread.halted 			 = 0;
-		newThread.available 		 = 0;
+		newThread.available 		 = 1;
 		newThread.loadCounter 		 = 0;
 		newThread.storeCounter 		 = 0;
 		newThread.instructionCounter = 0;
 
 		// same with the register, all set to 0.
-		for(size_t index = 0; index < REG_NUM; index++)
+		for(int index = 0; index < REG_NUM; index++)
 		{
 			newThread.reg[index] = 0;
 		}
 	}
+
+	//inst malloc
+	BLK_Instruction = (struct _inst*)malloc(sizeof(struct _inst));
 
 
 	// sources and destination for the "assembly" command.
@@ -114,6 +117,7 @@ void CORE_BlockedMT()
 	// We run until all threads finish. 
 	while (haltsCount != Blocked.numOfThreads)
 	{
+		//std::cout << "BLOCKED: stuck in outer while" << std::endl;
 		priorityThreadID = threadID;
 		idleCount = 0;
 
@@ -122,6 +126,8 @@ void CORE_BlockedMT()
 		// for some reason (halt / load-store idle).
 		while(Blocked.threads[threadID].halted || !Blocked.threads[threadID].available)
 		{
+			//std::cout << "BLOCKED: stuck in halt/available while" << std::endl;
+			//printf("number of threads is: %d, number of halted is: %d\n", Blocked.numOfThreads, haltsCount);
 			if(threadID == (Blocked.numOfThreads - 1))
 			{
 				// We loop until someone stops idling, 
@@ -152,18 +158,23 @@ void CORE_BlockedMT()
 				idleCount = 0;
 			}
 
+			//if(haltsCount == Blocked.numOfThreads)
+			//{
+			//	printf("all halted in RR while. exiting...\n");
+			//	break;
+			//}
 			// we exit this while loop when a thread is released from idling.
 
 			// CODE NOTICE - can we get stuck here if everyone is halted? seems dangerous
 		}
 
-
+		//printf("exited the halt/available loop\n");
 		// checks if we switch thread
 		if(threadID != priorityThreadID)
 		{
 			// we "pay" the context switch cost, meanwhile we 
 			// dont forget to decrement the load/store counters
-			for(size_t i = 0; i < Blocked.contextSwitchCycles; i++)
+			for(int i = 0; i < Blocked.contextSwitchCycles; i++)
 			{
 				UpdateThreadCountersBLK();
 			}
@@ -174,17 +185,20 @@ void CORE_BlockedMT()
 
 		// Load next command
 		SIM_MemInstRead(Blocked.threads[threadID].instructionCounter, BLK_Instruction, threadID);
-		src1 = BLK_Instruction.src1_index;
-		src2 = BLK_Instruction.src1_index;
-		dst  = BLK_Instruction.dst_index;
+		src1 = BLK_Instruction->src1_index;
+		src2 = BLK_Instruction->src2_index_imm;
+		dst  = BLK_Instruction->dst_index;
 
 		// Update the Load/Store counters
 		UpdateThreadCountersBLK();
 
+		if(DEBUG) printf("before switch\n");
 		// OPCODE SWITCH
-		switch(BLK_Instruction.opcode)
+		if(DEBUG) printf("(before switch)threadID is: %d\n",threadID);
+		switch(BLK_Instruction->opcode)
 		{
 			case CMD_HALT:
+				if(DEBUG) printf("chose HALT\n");
 				// when we halt, for clarity's sake we put available to 0 aswell.
 				Blocked.threads[threadID].halted = 1;
 				Blocked.threads[threadID].available = 0;
@@ -193,61 +207,69 @@ void CORE_BlockedMT()
 				break;
 
 			case CMD_ADD:
+				if(DEBUG) printf("chose ADD\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] + Blocked.threads[threadID].reg[src2];
 				break;
 			
 			case CMD_SUB:
+				if(DEBUG) printf("chose SUB\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] - Blocked.threads[threadID].reg[src2];
 				break;
 
 			case CMD_ADDI:
+				if(DEBUG) printf("chose ADDI\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] + src2;
 				break;
 			
 			case CMD_SUBI:
+				if(DEBUG) printf("chose SUBI\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] - src2;
 				break;
 			
 			case CMD_LOAD:
+				if(DEBUG) printf("chose LOAD\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].loadCounter = Blocked.loadLatency;
 				Blocked.threads[threadID].available = 0;
 
-				// need to check if src 2 is a number or a variable
-				if(BLK_Instruction.isSrc2Imm == true)
+				// We need to check if src 2 is a number or an imm
+				if(BLK_Instruction->isSrc2Imm == true)
 				{	// its a number
-					SIM_MemDataRead(Blocked.threads[threadID].reg[src_1] + src_2, &(Blocked.threads[threadID].reg[dst]));
+					SIM_MemDataRead(Blocked.threads[threadID].reg[src1] + src2, &(Blocked.threads[threadID].reg[dst]));
 				}
 				else
 				{	// its a variable
-					SIM_MemDataRead(Blocked.threads[threadID].reg[src_1] + Blocked.threads[threadID].reg[src_2], &(Blocked.threads[threadID].reg[dst]));
+					SIM_MemDataRead(Blocked.threads[threadID].reg[src1] + Blocked.threads[threadID].reg[src2], &(Blocked.threads[threadID].reg[dst]));
 				}
 				break;
 			
 			case CMD_STORE:
+				if(DEBUG) printf("chose STORE\n");
 				Blocked.threads[threadID].instructionCounter++;
 				Blocked.threads[threadID].storeCounter = Blocked.storeLatency;
 				Blocked.threads[threadID].available = 0;
 
 				// need to check if src 2 is a number or a variable
-				if(instrcution_b->isSrc2Imm == true)
+				if(BLK_Instruction->isSrc2Imm == true)
 				{	// its a number
-					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + src_2, Blocked.threads[threadID].reg[src_1]);
+					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + src2, Blocked.threads[threadID].reg[src1]);
 				}
 				else 
 				{	// its a variable
-					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + Blocked.threads[threadID].reg[src_2], Blocked.threads[threadID].reg[src_1]);						
+					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + Blocked.threads[threadID].reg[src2], Blocked.threads[threadID].reg[src1]);						
 				}
 				break;
 
 			case CMD_NOP:
+				if(DEBUG) printf("chose NOP\n");
 				break;
 		}
-		Blocked.totalCycleCount;
+		if(DEBUG) printf("after switch\n");
+		Blocked.totalCycleCount++;
 	}
 
 }
@@ -259,15 +281,19 @@ double CORE_BlockedMT_CPI()
 	// we sum up all the instructions we did to calc the CPI
 	int totalInstructionCount = 0;
 	for(int i = 0; i < Blocked.numOfThreads; i++){
+		//printf("\nthread %d did %d instructions.\n",i, Blocked.threads[i].instructionCounter);
 		totalInstructionCount += Blocked.threads[i].instructionCounter;
 	}
-	return (double)(Blocked.totalCycleCount / totalInstructionCount);
+	//printf("total instruction count is: %d\n", totalInstructionCount);
+	//printf("total counted cycles is: %d\n", Blocked.totalCycleCount);
+	double cpi = ((double)Blocked.totalCycleCount) / totalInstructionCount;
+	return cpi;
 }
 
 
 void CORE_BlockedMT_CTX(tcontext* context, int threadid) 
 {
-	for(size_t i = 0; i < REG_NUM; i++)
+	for(int i = 0; i < REG_NUM; i++)
 	{
 		context[threadid].reg[i] = Blocked.threads[threadid].reg[i];
 	}
@@ -320,7 +346,7 @@ void CORE_FinegrainedMT()
     FineGrained.threads.resize(FineGrained.numOfThreads);
 
 	// Now we initialize each thread, then insert them to the queue 1 by 1.
-	for (size_t i = 0; i < FineGrained.numOfThreads; i++)
+	for (int i = 0; i < FineGrained.numOfThreads; i++)
 	{
 
 		// Create a alias, and fill it with data
@@ -329,17 +355,21 @@ void CORE_FinegrainedMT()
 		// Initialize the thread with proper values
 		newThread.id 				 = i;
 		newThread.halted 			 = 0;
-		newThread.available 		 = 0;
+		newThread.available 		 = 1;
 		newThread.loadCounter 		 = 0;
 		newThread.storeCounter 		 = 0;
 		newThread.instructionCounter = 0;
 
 		// same with the register, all set to 0.
-		for(size_t index = 0; index < REG_NUM; index++)
+		for(int index = 0; index < REG_NUM; index++)
 		{
 			newThread.reg[index] = 0;
 		}
 	}
+
+	//inst malloc
+	FG_Instruction = (struct _inst*)malloc(sizeof(struct _inst));
+
 
 	// sources and destination for the "assembly" command.
 	int src1, src2, dst;
@@ -404,15 +434,15 @@ void CORE_FinegrainedMT()
 
 		// Load the next command
 		SIM_MemInstRead(FineGrained.threads[threadID].instructionCounter, FG_Instruction, threadID);
-		src1 = FG_Instruction.src1_index;
-		src2 = FG_Instruction.src1_index;
-		dst  = FG_Instruction.dst_index;
+		src1 = FG_Instruction->src1_index;
+		src2 = FG_Instruction->src2_index_imm;
+		dst  = FG_Instruction->dst_index;
 
 		// Update the Load/Store counters
 		UpdateThreadCountersFG();
 
 		// OPCODE SWITCH
-		switch(FG_Instruction.opcode)
+		switch(FG_Instruction->opcode)
 		{
 			case CMD_HALT:
 				// when we halt, for clarity's sake we put available to 0 aswell.
@@ -448,13 +478,13 @@ void CORE_FinegrainedMT()
 				FineGrained.threads[threadID].available = 0;
 
 				// need to check if src 2 is a number or a variable
-				if(BLK_Instruction.isSrc2Imm == true)
+				if(FG_Instruction->isSrc2Imm == true)
 				{	// its a number
-					SIM_MemDataRead(FineGrained.threads[threadID].reg[src_1] + src_2, &(FineGrained.threads[threadID].reg[dst]));
+					SIM_MemDataRead(FineGrained.threads[threadID].reg[src1] + src2, &(FineGrained.threads[threadID].reg[dst]));
 				}
 				else
 				{	// its a variable
-					SIM_MemDataRead(FineGrained.threads[threadID].reg[src_1] + FineGrained.threads[threadID].reg[src_2], &(FineGrained.threads[threadID].reg[dst]));
+					SIM_MemDataRead(FineGrained.threads[threadID].reg[src1] + FineGrained.threads[threadID].reg[src2], &(FineGrained.threads[threadID].reg[dst]));
 				}
 				break;
 			
@@ -464,13 +494,13 @@ void CORE_FinegrainedMT()
 				FineGrained.threads[threadID].available = 0;
 
 				// need to check if src 2 is a number or a variable
-				if(instrcution_b->isSrc2Imm == true)
+				if(FG_Instruction->isSrc2Imm == true)
 				{	// its a number
-					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + src_2, FineGrained.threads[threadID].reg[src_1]);
+					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + src2, FineGrained.threads[threadID].reg[src1]);
 				}
 				else 
 				{	// its a variable
-					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + FineGrained.threads[threadID].reg[src_2], FineGrained.threads[threadID].reg[src_1]);						
+					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + FineGrained.threads[threadID].reg[src2], FineGrained.threads[threadID].reg[src1]);						
 				}
 				break;
 
@@ -499,7 +529,8 @@ double CORE_FinegrainedMT_CPI()
 	for(int i = 0; i < FineGrained.numOfThreads; i++){
 		totalInstructionCount += FineGrained.threads[i].instructionCounter;
 	}
-	return (double)(FineGrained.totalCycleCount / totalInstructionCount);
+	double cpi = ((double)FineGrained.totalCycleCount) / totalInstructionCount;
+	return cpi;
 }
 
 

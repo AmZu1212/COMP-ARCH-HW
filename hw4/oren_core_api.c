@@ -181,6 +181,10 @@ void CORE_BlockedMT() {
 				b_mt->arr[thd_idx][INST_NUM] ++;
 				b_mt->arr[thd_idx][LOAD_CTR]= b_mt->load_latency;
 				b_mt->arr[thd_idx][AVAILABLE] = 0;
+
+				printf("threadID is: %d\n", thd_idx);
+				printf("src1 is: %d\n", src_1);
+				printf("src2 is: %d\n", src_2);
 				if(instrcution_b->isSrc2Imm == true){
 					SIM_MemDataRead(reg_arr_blocked[thd_idx][src_1]+src_2,&(reg_arr_blocked[thd_idx][dst]));
 				}
