@@ -109,10 +109,12 @@ void CORE_BlockedMT() {
 			else {
 				thd_idx++;
 				if(DEBUG) printf("\ncurrent thread = %d\n",thd_idx );
-			}		
+			}	
+				
 			if(b_mt->arr[thd_idx][AVAILABLE]!=1){
 				count_idle++;
 			}
+			
 			//making sure we aint stuck in an infinite loop by updating the cycle+availibality status of each thread
 			if(count_idle==(b_mt->num_threads)){
 				global_cycle_count_blocked++;

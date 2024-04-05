@@ -60,7 +60,7 @@ void UpdateThreadCountersFG();
 void CORE_BlockedMT() 
 {
 
-	// First we initiate global constants.
+	// First we initiate constants.
 	Blocked.contextSwitchCycles = SIM_GetSwitchCycles();
 	Blocked.storeLatency		= SIM_GetStoreLat();
 	Blocked.loadLatency			= SIM_GetLoadLat();
@@ -97,17 +97,14 @@ void CORE_BlockedMT()
 	int src1, src2, dst;
 
 
-
-
 	// we'll count how many of the current 
 	// threads are idle due to stores/loads.
 	int idleCount = 0;		
 
+
 	// and we'll use the priotity thread id
 	int threadID = 0;
 	int priorityThreadID;
-
-
 
 
 	// When a thread finishes it increments the halts_count variable by 1.
@@ -145,7 +142,6 @@ void CORE_BlockedMT()
 
 			}
 
-
 			// and if all the threads are blocked, we just update the load/store counters.
 			if(idleCount == Blocked.numOfThreads)
 			{
@@ -176,12 +172,13 @@ void CORE_BlockedMT()
 			Blocked.totalCycleCount += Blocked.contextSwitchCycles;
 		}
 
-		SIM_MemInstRead(Blocekd.threads[threadID].instructionCounter, BLK_Instruction, threadID);
+		// Load next command
+		SIM_MemInstRead(Blocked.threads[threadID].instructionCounter, BLK_Instruction, threadID);
 		src1 = BLK_Instruction.src1_index;
 		src2 = BLK_Instruction.src1_index;
 		dst  = BLK_Instruction.dst_index;
 
-
+		// Update the Load/Store counters
 		UpdateThreadCountersBLK();
 
 		// OPCODE SWITCH
@@ -312,6 +309,186 @@ void UpdateThreadCountersBLK()
 // the FineGrained MT get initialized in this function.
 void CORE_FinegrainedMT() 
 {
+	// First we initiate constants.
+	FineGrained.contextSwitchCycles = SIM_GetSwitchCycles();
+	FineGrained.storeLatency		= SIM_GetStoreLat();
+	FineGrained.loadLatency			= SIM_GetLoadLat();
+	FineGrained.numOfThreads		= SIM_GetThreadsNum();
+	FineGrained.totalCycleCount		= 0;
+
+	// this makes the slots to write the info into.
+    FineGrained.threads.resize(FineGrained.numOfThreads);
+
+	// Now we initialize each thread, then insert them to the queue 1 by 1.
+	for (size_t i = 0; i < FineGrained.numOfThreads; i++)
+	{
+
+		// Create a alias, and fill it with data
+		Thread& newThread = FineGrained.threads[i];
+
+		// Initialize the thread with proper values
+		newThread.id 				 = i;
+		newThread.halted 			 = 0;
+		newThread.available 		 = 0;
+		newThread.loadCounter 		 = 0;
+		newThread.storeCounter 		 = 0;
+		newThread.instructionCounter = 0;
+
+		// same with the register, all set to 0.
+		for(size_t index = 0; index < REG_NUM; index++)
+		{
+			newThread.reg[index] = 0;
+		}
+	}
+
+	// sources and destination for the "assembly" command.
+	int src1, src2, dst;
+
+
+	// we'll count how many of the current 
+	// threads are idle due to stores/loads.
+	int idleCount = 0;		
+
+
+	// and we'll use the priotity thread id
+	int threadID = 0;
+
+
+	// When a thread finishes it increments the halts_count variable by 1.
+	int haltsCount = 0;
+
+
+	// We run until all threads finish. 
+	while (haltsCount != FineGrained.numOfThreads)
+	{
+
+		// (*)  - i think this might get stuck in an infinite loop. 	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+		// we enter this if the current picked thread is stopped 
+		// for some reason (halt / load-store idle).
+		while(FineGrained.threads[threadID].halted || !FineGrained.threads[threadID].available)
+		{
+			if(threadID == (FineGrained.numOfThreads - 1))
+			{
+				// We loop until someone stops idling, 
+				// we get here only if everyone is busy.
+				threadID = 0; 
+			}
+			else
+			{
+				// this thread is also delayed, move to the next one
+				threadID++;
+			}
+
+			if(!FineGrained.threads[threadID].available)
+			{
+				// if the current thread is idling
+				// we increment the count
+				idleCount++;
+
+			}
+
+			// and if all the threads are blocked, we just update the load/store counters.
+			if(idleCount == FineGrained.numOfThreads)
+			{
+				FineGrained.totalCycleCount++;
+				// this decrements the load/store counters for all the threads
+				// as if a cycle passed
+				UpdateThreadCountersFG();
+				idleCount = 0;
+			}
+
+			// we exit this while loop when a thread is released from idling.
+
+			// CODE NOTICE - can we get stuck here if everyone is halted? seems dangerous
+		}
+
+		// Load the next command
+		SIM_MemInstRead(FineGrained.threads[threadID].instructionCounter, FG_Instruction, threadID);
+		src1 = FG_Instruction.src1_index;
+		src2 = FG_Instruction.src1_index;
+		dst  = FG_Instruction.dst_index;
+
+		// Update the Load/Store counters
+		UpdateThreadCountersFG();
+
+		// OPCODE SWITCH
+		switch(FG_Instruction.opcode)
+		{
+			case CMD_HALT:
+				// when we halt, for clarity's sake we put available to 0 aswell.
+				FineGrained.threads[threadID].halted = 1;
+				FineGrained.threads[threadID].available = 0;
+				FineGrained.threads[threadID].instructionCounter++;
+				haltsCount++; // also we increment the halt count
+				break;
+
+			case CMD_ADD:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].reg[dst] = FineGrained.threads[threadID].reg[src1] + FineGrained.threads[threadID].reg[src2];
+				break;
+			
+			case CMD_SUB:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].reg[dst] = FineGrained.threads[threadID].reg[src1] - FineGrained.threads[threadID].reg[src2];
+				break;
+
+			case CMD_ADDI:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].reg[dst] = FineGrained.threads[threadID].reg[src1] + src2;
+				break;
+			
+			case CMD_SUBI:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].reg[dst] = FineGrained.threads[threadID].reg[src1] - src2;
+				break;
+			
+			case CMD_LOAD:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].loadCounter = FineGrained.loadLatency;
+				FineGrained.threads[threadID].available = 0;
+
+				// need to check if src 2 is a number or a variable
+				if(BLK_Instruction.isSrc2Imm == true)
+				{	// its a number
+					SIM_MemDataRead(FineGrained.threads[threadID].reg[src_1] + src_2, &(FineGrained.threads[threadID].reg[dst]));
+				}
+				else
+				{	// its a variable
+					SIM_MemDataRead(FineGrained.threads[threadID].reg[src_1] + FineGrained.threads[threadID].reg[src_2], &(FineGrained.threads[threadID].reg[dst]));
+				}
+				break;
+			
+			case CMD_STORE:
+				FineGrained.threads[threadID].instructionCounter++;
+				FineGrained.threads[threadID].storeCounter = FineGrained.storeLatency;
+				FineGrained.threads[threadID].available = 0;
+
+				// need to check if src 2 is a number or a variable
+				if(instrcution_b->isSrc2Imm == true)
+				{	// its a number
+					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + src_2, FineGrained.threads[threadID].reg[src_1]);
+				}
+				else 
+				{	// its a variable
+					SIM_MemDataWrite(FineGrained.threads[threadID].reg[dst] + FineGrained.threads[threadID].reg[src_2], FineGrained.threads[threadID].reg[src_1]);						
+				}
+				break;
+
+			case CMD_NOP:
+				break;
+		}
+
+
+		FineGrained.totalCycleCount++;
+		if(threadID == (FineGrained.numOfThreads - 1))
+		{
+			threadID = 0;
+		}
+		else 
+		{
+			threadID++;	
+		}
+	}
 }
 
 
