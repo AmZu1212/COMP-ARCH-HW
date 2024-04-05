@@ -51,8 +51,8 @@ Instruction FG_Instruction;
 
 
 // ========= Helper Functions Declarations ==========
-void UpdateThreadCounters();
-
+void UpdateThreadCountersBLK();
+void UpdateThreadCountersFG();
 
 
 
@@ -151,7 +151,7 @@ void CORE_BlockedMT() {
 				Blocked.totalCycleCount++;
 				// this decrements the load/store counters for all the threads
 				// as if a cycle passed
-				UpdateThreadCounters();
+				UpdateThreadCountersBLK();
 				idleCount = 0;
 			}
 
@@ -168,39 +168,141 @@ void CORE_BlockedMT() {
 			// dont forget to decrement the load/store counters
 			for(size_t i = 0; i < Blocked.contextSwitchCycles; i++)
 			{
-				UpdateThreadCounters();
+				UpdateThreadCountersBLK();
 			}
 			
 			// and ofcourse we count the penalty to the total cycles.
 			Blocked.totalCycleCount += Blocked.contextSwitchCycles;
 		}
 
+		SIM_MemInstRead(Blocekd.threads[threadID].instructionCounter, BLK_Instruction, threadID);
+		src1 = BLK_Instruction.src1_index;
+		src2 = BLK_Instruction.src1_index;
+		dst  = BLK_Instruction.dst_index;
+
+
+		UpdateThreadCountersBLK();
+
+		// OPCODE SWITCH
+		switch(BLK_Instruction.opcode)
+		{
+			case CMD_HALT:
+				// when we halt, for clarity's sake we put available to 0 aswell.
+				Blocked.threads[threadID].halted = 1;
+				Blocked.threads[threadID].available = 0;
+				Blocked.threads[threadID].instructionCounter++;
+				haltsCount++; // also we increment the halt count
+				break;
+
+			case CMD_ADD:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] + Blocked.threads[threadID].reg[src2];
+				break;
+			
+			case CMD_SUB:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] - Blocked.threads[threadID].reg[src2];
+				break;
+
+			case CMD_ADDI:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] + src2;
+				break;
+			
+			case CMD_SUBI:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].reg[dst] = Blocked.threads[threadID].reg[src1] - src2;
+				break;
+			
+			case CMD_LOAD:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].loadCounter = Blocked.loadLatency;
+				Blocked.threads[threadID].available = 0;
+
+				// need to check if src 2 is a number or a variable
+				if(BLK_Instruction.isSrc2Imm == true)
+				{	// its a number
+					SIM_MemDataRead(Blocked.threads[threadID].reg[src_1] + src_2, &(Blocked.threads[threadID].reg[dst]));
+				}
+				else
+				{	// its a variable
+					SIM_MemDataRead(Blocked.threads[threadID].reg[src_1] + Blocked.threads[threadID].reg[src_2], &(Blocked.threads[threadID].reg[dst]));
+				}
+				break;
+			
+			case CMD_STORE:
+				Blocked.threads[threadID].instructionCounter++;
+				Blocked.threads[threadID].storeCounter = Blocked.storeLatency;
+				Blocked.threads[threadID].available = 0;
+
+				// need to check if src 2 is a number or a variable
+				if(instrcution_b->isSrc2Imm == true)
+				{	// its a number
+					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + src_2, Blocked.threads[threadID].reg[src_1]);
+				}
+				else 
+				{	// its a variable
+					SIM_MemDataWrite(Blocked.threads[threadID].reg[dst] + Blocked.threads[threadID].reg[src_2], Blocked.threads[threadID].reg[src_1]);						
+				}
+				break;
+
+			case CMD_NOP:
+				break;
+		}
+		Blocked.totalCycleCount;
+	}
+
+}
 
 
 
+double CORE_BlockedMT_CPI()
+{
+	// we sum up all the instructions we did to calc the CPI
+	int totalInstructionCount = 0;
+	for(int i = 0; i < Blocked.numOfThreads; i++){
+		totalInstructionCount += Blocked.threads[i].instructionCounter;
+	}
+	return (double)(Blocked.totalCycleCount / totalInstructionCount);
+}
+
+
+void CORE_BlockedMT_CTX(tcontext* context, int threadid) 
+{
+	for(size_t i = 0; i < REG_NUM; i++)
+	{
+		context[threadid].reg[i] = Blocked.threads[threadid].reg[i];
 	}
 }
 
-
-
-double CORE_BlockedMT_CPI(){
-	return 0;
+// this function goes over every thread and if the thread is unavailable 
+// it decrements the load/store counter and if the counters reach 0 it
+// ups the available bit.
+void UpdateThreadCountersBLK()
+{
+	for (int i = 0; i < Blocked.numOfThreads; i++)
+	{
+		if (Blocked.threads[i].available == 0)
+		{
+			if (Blocked.threads[i].loadCounter != 0)
+			{
+				Blocked.threads[i].loadCounter--;
+				if (Blocked.threads[i].loadCounter == 0)
+				{
+					Blocked.threads[i].available = 1;
+				}
+			}
+			if (Blocked.threads[i].storeCounter != 0)
+			{
+				Blocked.threads[i].storeCounter--;
+				if (Blocked.threads[i].storeCounter == 0)
+				{
+					Blocked.threads[i].available = 1;
+				}
+			}
+		}
+	}
 }
-
-
-void CORE_BlockedMT_CTX(tcontext* context, int threadid) {
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -211,9 +313,49 @@ void CORE_FinegrainedMT() {
 
 
 double CORE_FinegrainedMT_CPI(){
-	return 0;
+		// we sum up all the instructions we did to calc the CPI
+	int totalInstructionCount = 0;
+	for(int i = 0; i < FineGrained.numOfThreads; i++){
+		totalInstructionCount += FineGrained.threads[i].instructionCounter;
+	}
+	return (double)(FineGrained.totalCycleCount / totalInstructionCount);
 }
 
 
 void CORE_FinegrainedMT_CTX(tcontext* context, int threadid) {
+	for (int i = 0; i < REG_NUM; i++)
+	{
+		context[threadid].reg[i] = FineGrained.threads[threadid].reg[i];
+	}
+}
+
+
+
+// this function goes over every thread and if the thread is unavailable 
+// it decrements the load/store counter and if the counters reach 0 it
+// ups the available bit.
+void UpdateThreadCountersFG()
+{
+	for (int i = 0; i < FineGrained.numOfThreads; i++)
+	{
+		if (FineGrained.threads[i].available == 0)
+		{
+			if (FineGrained.threads[i].loadCounter != 0)
+			{
+				FineGrained.threads[i].loadCounter--;
+				if (FineGrained.threads[i].loadCounter == 0)
+				{
+					FineGrained.threads[i].available = 1;
+				}
+			}
+			if (FineGrained.threads[i].storeCounter != 0)
+			{
+				FineGrained.threads[i].storeCounter--;
+				if (FineGrained.threads[i].storeCounter == 0)
+				{
+					FineGrained.threads[i].available = 1;
+				}
+			}
+		}
+	}
 }
