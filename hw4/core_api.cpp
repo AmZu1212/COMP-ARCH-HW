@@ -50,14 +50,15 @@ Instruction BLK_Instruction;
 Instruction FG_Instruction;
 
 
-// ========= Helper Functions Declarations ==========
+// =================================== Helper Functions Declarations ===============================
 void UpdateThreadCountersBLK();
 void UpdateThreadCountersFG();
 
 
-
-// the MTs get initialized in this function.
-void CORE_BlockedMT() {
+// =================================== Blocked SECTION =============================================
+// the Blocked MT get initialized in this function.
+void CORE_BlockedMT() 
+{
 
 	// First we initiate global constants.
 	Blocked.contextSwitchCycles = SIM_GetSwitchCycles();
@@ -307,12 +308,15 @@ void UpdateThreadCountersBLK()
 
 
 
-// ========= FINE-GRAINED SECTION ============
-void CORE_FinegrainedMT() {
+// ================================ FINE-GRAINED SECTION ===========================================
+// the FineGrained MT get initialized in this function.
+void CORE_FinegrainedMT() 
+{
 }
 
 
-double CORE_FinegrainedMT_CPI(){
+double CORE_FinegrainedMT_CPI()
+{
 		// we sum up all the instructions we did to calc the CPI
 	int totalInstructionCount = 0;
 	for(int i = 0; i < FineGrained.numOfThreads; i++){
@@ -322,7 +326,8 @@ double CORE_FinegrainedMT_CPI(){
 }
 
 
-void CORE_FinegrainedMT_CTX(tcontext* context, int threadid) {
+void CORE_FinegrainedMT_CTX(tcontext* context, int threadid) 
+{
 	for (int i = 0; i < REG_NUM; i++)
 	{
 		context[threadid].reg[i] = FineGrained.threads[threadid].reg[i];
